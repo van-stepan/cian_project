@@ -419,7 +419,7 @@ class PSQLHandler():
         
         try:
             
-            column_data = [("price", "bigint"), ("pricem2", "bigint"), ("current_date", "date")]
+            column_data = [("price", "bigint"), ("pricem2", "bigint"), ("currentdate", "date")]
             
             for item in column_data:
                 
@@ -433,17 +433,17 @@ class PSQLHandler():
                     if current_column_type != new_column_type:
                         
                         query = "update " + table_name + " set " + column_name + " = replace(" + column_name + ", ' ', '');"
-                        self.execute(query)
+                        self.execute(query, silent)
                         
                         if new_column_type.find('date') == -1:
                             
                             query = "delete from " + table_name + " where " + column_name + " = 'Price';"
-                            self.execute(query)
+                            self.execute(query, silent)
                             query = "delete from " + table_name + " where " + column_name + " = '';"
-                            self.execute(query)
+                            self.execute(query, silent)
                             query = "alter table " + table_name + " alter column " + column_name + " type " + new_column_type\
                                      + " using " + column_name + "::" + new_column_type + ";"
-                            self.execute(query)
+                            self.execute(query, silent)
                             
                         else:
                             
@@ -506,14 +506,14 @@ class PSQLHandler():
          
         return
 
-psql = PSQLHandler()
+# psql = PSQLHandler()
 # 
 # psql.standardizeTableColumns("test")
 # 
 # print len(psql.getFullColumnsListByTableArray(['test'])), len(psql.getFullColumnsListByTableArray(['test_1']))
-
-table = "raw_2015_03_06___00_19_buf"
-psql.prettifyTableColumns(table)
+# 
+# table = "raw_2015_03_06___00_19_buf"
+# psql.prettifyTableColumns(table)
 #  
 # psql.dropTablesByPattern(table_name_pattern)
 #  

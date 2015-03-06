@@ -140,6 +140,7 @@ psqlh = psql.PSQLHandler()
 dest_table = "raw_" + os.path.basename(dir).replace("-", "_")
 print dir, result_file
 psqlh.loadCIANResultIntoPSQL(dest_table, result_file)
+psqlh.prettifyColumns(dest_table)
 
 # psqlh = psql.PSQLHandler()
 #    
