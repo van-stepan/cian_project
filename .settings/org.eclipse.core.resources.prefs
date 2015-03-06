@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+encoding//cian_parser/cian_parser.py=utf-8
+encoding//cian_uploader/cian_uploader.py=utf-8
+encoding//external_data_crawlers/building_info.py=utf-8
+encoding//support/aws.py=utf-8
+encoding//support/dicts.py=utf-8
+encoding//support/lists.py=utf-8
+encoding//support/mosopen_parser.py=utf-8
+encoding//support/psql.py=utf-8
+encoding//support/utilities.py=utf-8
+encoding/main.py=utf-8
