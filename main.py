@@ -21,6 +21,7 @@ import cian_uploader.cian_uploader
  
 names = lists.names
 metro_stations = lists.metro_stations
+metro_stations_1 = lists.metro_stations
  
 class CianProcessingManager:
     
