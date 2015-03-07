@@ -3,7 +3,8 @@
 import psycopg2
 import logging
 import re
-import numpy
+import numpy as np
+from scipy import stats
 
 
 columns_dictionary = {"Link" :  "varchar",
@@ -102,6 +103,8 @@ columns_list =      [["Link", "varchar"],
                       ["CurrentTime", "varchar"], 
                       ["CurrentDate", "varchar"]]
 
+
+# PostgreSQL Handler
 
 class PSQLHandler():
     
@@ -299,7 +302,7 @@ class PSQLHandler():
             query = "SELECT table_schema,table_name FROM information_schema.tables;";
             rows = self.execute(query, silent)
             regexp = re.compile(table_name_pattern)
-           
+            
             return [row[1] for row in rows if regexp.search(row[1])]
             
         except Exception, e:
@@ -363,20 +366,28 @@ class PSQLHandler():
     
     
     
-    def unionTables(self, src_table_array, result_table_name, remove_duplicates = False, silent = False):
+    def unionTables(self, src_table_array, result_table_name, remove_duplicates = True, silent = False):
         
         try:
             
             if remove_duplicates:
-                union_modifier = " all "
-            else:
                 union_modifier = ""
+            else:
+                union_modifier = " all "
             
-            query = "create table " + result_table_name + " as select * from "
+            column_order_string = ""
+            for i in range(len(columns_list)):
+                col = columns_list[i]
+                if i == 0:
+                    column_order_string = column_order_string + col[0] 
+                else:
+                    column_order_string = column_order_string + ", " + col[0] 
+            
+            query = "create table " + result_table_name + " as select " + column_order_string + " from "
             for i in range(len(src_table_array)):
                 table = src_table_array[i]
                 if i != len(src_table_array) - 1:
-                    query = query + table + " union " + union_modifier + " select * from "
+                    query = query + table + " union " + union_modifier + " select " + column_order_string + " from "
                 else:
                     query = query + table + ";"
 
@@ -500,20 +511,78 @@ class PSQLHandler():
              
         except Exception, e:
              
-            msg = "ERROR (PSQLHandler.loadCIANResultIntoPSQL): " + repr(e)
+            msg = "ERROR (PSQLHandler.dropTablesByPattern): " + repr(e)
             logging.error(msg)
             print msg
          
         return
+    
+    
+    def getConfidenceInterval(self, column_name, table_name, confidence_level = 0.05, silent = False):
+        
+        try:
+            
+            if not self.isColumnExistsInTable(column_name, table_name):
+                return []
+            
+            query = "select " + column_name + " from " + table_name + ";"
+            rows = self.execute(query, silent)
+            rows =  np.asarray( [int(row[0]) for row in rows] )
+            
+            limits = np.percentile(rows, [5, 95])
+            
+            return limits
+             
+        except Exception, e:
+             
+            msg = "ERROR (PSQLHandler.getConfidenceInterval): " + repr(e)
+            logging.error(msg)
+            print msg
+         
+        return
+    
+    
+    def filterTableByIntervalFilter(self, table, result_table, filter_conditions, silent = False):
+        
+        try:
+            
+            query = "select * into " + result_table + " from " + table + " where "
+            
+            for i in range(len(filter_conditions)):
+                
+                cond = filter_conditions[i]
+                
+                column_name = cond[0]
+                lower = cond[1][0]
+                upper = cond[1][1]
+            
+                query = query + column_name + " > " + str(lower) + " and " + column_name + " < " + str(upper) + " "
+                
+            query = query + ";"
+            print query
+            
+            self.execute(query, silent)
+            
+            return
+             
+        except Exception, e:
+             
+            msg = "ERROR (PSQLHandler.filterTableByIntervalFilter): " + repr(e)
+            logging.error(msg)
+            print msg
+         
+        return
+    
 
-# psql = PSQLHandler()
-# 
-# psql.standardizeTableColumns("test")
-# 
-# print len(psql.getFullColumnsListByTableArray(['test'])), len(psql.getFullColumnsListByTableArray(['test_1']))
-# 
-# table = "raw_2015_03_06___00_19_buf"
-# psql.prettifyTableColumns(table)
+psql = PSQLHandler()
+limits = psql.getConfidenceInterval("pricem2", "main")
+filter_condition = [["pricem2", limits]]
+
+psql.filterTableByIntervalFilter("main", "main_conflim_pricem2", filter_condition)
+
+
+#     
+# psql.standardizeTableColumns("raw_*")
 #  
 # psql.dropTablesByPattern(table_name_pattern)
 #  
