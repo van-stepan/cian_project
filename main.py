@@ -82,7 +82,7 @@ logging.basicConfig(filename='C:\\CIAN_DATA\\LOG.TXT', level=logging.ERROR)
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 logging.warning('is when this event was logged.')
 
-nrooms = [0,1,2,3,4,5,6]
+nrooms = [0, 1, 2, 3, 4, 5, 6]
 
 date_marker = datetime.datetime.now().strftime("%Y-%m-%d___%H-%M")
 dir = os.path.join(dicts.dirs['msk']['sell'], date_marker)
@@ -92,18 +92,18 @@ opcode = "SELL"
 
 
 # UPLOADING
- 
+   
 uploader = cian_uploader.cian_uploader.CianPageUploader(dir, url_pattern, nrooms)
 uploader.uploadPages()
-   
+     
 # # PARSING
-    
+      
 page_file_pattern = dicts.page_file_pattern
 resfile_part_pattern = dicts.resfile_part_pattern
-     
+       
 cp = cian_parser.cian_parser.CianParser()
 for k in nrooms:
-                 
+                   
     try:
         page_filenames_all = []
         page_filenames = glob.glob1(dir, page_file_pattern + "_" + str(k) + "*.txt")
@@ -113,47 +113,31 @@ for k in nrooms:
             page_filenames_all.append(page_filenames[i])
     except:
         pass
-                    
-                    
+                      
+                      
     if page_filenames_all != []:
         txt_filename = os.path.join(dir, resfile_part_pattern + str(k) + ".txt")
         cp.putPageAdsFromFileToTXT(txt_filename, page_filenames_all, opcode)
-             
-             
+               
+               
     for page_filename in page_filenames_all:
         print page_filename
-             
-             
+               
+               
     try:
         for page_filename in page_filenames_all:
             os.remove(page_filename)
     except:
         pass
 
- 
-result_file = utilities.mergeRoomwiseFiles(dir, resfile_part_pattern)
 # 
-# dir = "C:\\CIAN_DATA\\MSK\\SELL\\2015-03-06___00-19" # raw_2015_03_06___00_19
-# result_file = os.path.join(dir, "RESULT_ALL.txt")
+# dir = "C:\\CIAN_DATA\\MSK\\SELL\\2015-03-08___23-24"
+# resfile_part_pattern = dicts.resfile_part_pattern
+
+result_file = utilities.mergeRoomwiseFiles(dir, resfile_part_pattern)
 psqlh = psql.PSQLHandler()
 
+# Load data into RAW_ table
+
 dest_table = "raw_" + os.path.basename(dir).replace("-", "_")
-
-print dir, result_file
-
 psqlh.loadCIANResultIntoPSQL(dest_table, result_file)
-psqlh.prettifyTableColumns(dest_table)
-
-# psqlh = psql.PSQLHandler()
-#    
-# a_dir = "C:\\CIAN_DATA\\MSK\\SELL\\"
-# def get_immediate_subdirectories(a_dir):
-#     return [os.path.join(a_dir, name) for name in os.listdir(a_dir)
-#         if os.path.isdir(os.path.join(a_dir, name))]
-#         
-# for dir in get_immediate_subdirectories(a_dir):
-#      
-#     result_file = utilities.mergeRoomwiseFiles(dir, resfile_part_pattern)
-#     dest_table = "raw_" + os.path.basename(dir).replace("-", "_")
-#     print dir, result_file
-#     psqlh.loadCIANResultIntoPSQL(dest_table, result_file)

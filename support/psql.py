@@ -7,7 +7,7 @@ import numpy as np
 from scipy import stats
 
 
-columns_dictionary = {"Link" :  "varchar",
+columns_dictionary_total = {"Link" :  "varchar",
                       "ID" :  "varchar",
                       "NRooms" :  "varchar",
                       
@@ -19,18 +19,18 @@ columns_dictionary = {"Link" :  "varchar",
                       
                       "Metro" :  "varchar",
                       "MetroDisctrict" :  "varchar",
-                      "MinToMetro" :  "integer",
+                      "MinToMetro" :  "bigint",
                       "ByWhatToMetro" :  "varchar",
-                      "MinToMetroConverted" :  "integer",
+                      "MinToMetroConverted" :  "bigint",
                       
-                      "Floor" :  "integer",
-                      "FloorsTotal" :  "integer",
+                      "Floor" :  "bigint",
+                      "FloorsTotal" :  "bigint",
                       "HouseType" :  "varchar",
                       
-                      "AreaTotal" :  "integer",
-                      "AreaBedroom" :  "integer",
-                      "AreaKitchen" :  "integer",
-                      "AreaLiving" :  "integer",
+                      "AreaTotal" :  "bigint",
+                      "AreaBedroom" :  "bigint",
+                      "AreaKitchen" :  "bigint",
+                      "AreaLiving" :  "bigint",
                       
                       "InfoBalcon" :  "varchar",
                       "InfoLift" :  "varchar",
@@ -40,8 +40,8 @@ columns_dictionary = {"Link" :  "varchar",
                       "InfoSellingStyle" :  "varchar",
                       "InfoSellingAge" :  "varchar",
                       
-                      "Price" :  "integer",
-                      "PriceM2" :  "integer",
+                      "Price" :  "bigint",
+                      "PriceM2" :  "bigint",
                       "Currency" :  "varchar",
                       
                       "Rltr_ID" :  "varchar",
@@ -50,12 +50,12 @@ columns_dictionary = {"Link" :  "varchar",
                       
                       "Text" : "varchar",
                       
-                      "PostingTime" :  "varchar",
-                      "PostingDate" :  "varchar",
-                      "CurrentTime" :  "varchar",
-                      "CurrentDate" :  "varchar"}
+#                       "PostingTime" :  "varchar",
+#                       "PostingDate" :  "varchar",
+#                       "CurrentTime" :  "varchar",
+                      "Date" :  "varchar"}
 
-columns_list =      [["Link", "varchar"], 
+columns_list_total =      [["Link", "varchar"], 
                       ["ID", "varchar"], 
                       ["NRooms", "varchar"], 
                       
@@ -67,18 +67,18 @@ columns_list =      [["Link", "varchar"],
                       
                       ["Metro", "varchar"], 
                       ["MetroDisctrict", "varchar"], 
-                      ["MinToMetro", "varchar"], 
+                      ["MinToMetro", "bigint"], 
                       ["ByWhatToMetro", "varchar"], 
-                      ["MinToMetroConverted", "varchar"], 
+                      ["MinToMetroConverted", "bigint"], 
                       
-                      ["Floor", "varchar"], 
-                      ["FloorsTotal", "varchar"], 
+                      ["Floor", "bigint"], 
+                      ["FloorsTotal", "bigint"], 
                       ["HouseType", "varchar"], 
                       
-                      ["AreaTotal", "varchar"], 
-                      ["AreaBedroom", "varchar"], 
-                      ["AreaKitchen", "varchar"], 
-                      ["AreaLiving", "varchar"], 
+                      ["AreaTotal", "bigint"], 
+                      ["AreaBedroom", "bigint"], 
+                      ["AreaKitchen", "bigint"], 
+                      ["AreaLiving", "bigint"], 
                       
                       ["InfoBalcon", "varchar"], 
                       ["InfoLift", "varchar"], 
@@ -88,8 +88,8 @@ columns_list =      [["Link", "varchar"],
                       ["InfoSellingStyle", "varchar"], 
                       ["InfoSellingAge", "varchar"], 
                       
-                      ["Price", "varchar"], 
-                      ["PriceM2", "varchar"], 
+                      ["Price", "bigint"], 
+                      ["PriceM2", "bigint"], 
                       ["Currency", "varchar"], 
                       
                       ["Rltr_ID", "varchar"], 
@@ -98,10 +98,10 @@ columns_list =      [["Link", "varchar"],
                       
                       ["Text", "varchar"], 
                       
-                      ["PostingTime", "varchar"], 
-                      ["PostingDate", "varchar"], 
-                      ["CurrentTime", "varchar"], 
-                      ["CurrentDate", "varchar"]]
+#                       ["PostingTime", "varchar"], 
+#                       ["PostingDate", "varchar"], 
+#                       ["CurrentTime", "varchar"], 
+                      ["Date", "varchar"]]
 
 
 # PostgreSQL Handler
@@ -193,7 +193,11 @@ class PSQLHandler():
         columns_list = []
         
         for item in raw_columns_list:
-            columns_list.append([item, "varchar"])
+            try:
+                columns_list.append([item, columns_dictionary_total[item]])
+            except:
+                columns_list.append([item, "varchar"])
+                print "CAUTION (getColumnsListFromCSV): " + item + " type set to varchar"
             
         return columns_list
         
@@ -366,7 +370,7 @@ class PSQLHandler():
     
     
     
-    def unionTables(self, src_table_array, result_table_name, remove_duplicates = True, silent = False):
+    def unionTables(self, src_table_array, result_table_name, result_columns_list, remove_duplicates = True, silent = False):
         
         try:
             
@@ -376,23 +380,49 @@ class PSQLHandler():
                 union_modifier = " all "
             
             column_order_string = ""
-            for i in range(len(columns_list)):
-                col = columns_list[i]
+            for i in range(len(result_columns_list)):
+                col = result_columns_list[i]
                 if i == 0:
-                    column_order_string = column_order_string + col[0] 
+                    column_order_string = column_order_string + col
                 else:
-                    column_order_string = column_order_string + ", " + col[0] 
+                    column_order_string = column_order_string + ", " + col
             
-            query = "create table " + result_table_name + " as select " + column_order_string + " from "
-            for i in range(len(src_table_array)):
-                table = src_table_array[i]
-                if i != len(src_table_array) - 1:
-                    query = query + table + " union " + union_modifier + " select " + column_order_string + " from "
-                else:
-                    query = query + table + ";"
-
-            rows = self.execute(query, silent)
-            return rows
+            if result_table_name in src_table_array:
+                
+                query = "create table _temp_ as select " + column_order_string + " from " + result_table_name + \
+                        " union " + union_modifier + " select " + column_order_string + " from "
+                        
+                for i in range(len(src_table_array)):
+                    table = src_table_array[i]
+                    if i != len(src_table_array) - 1:
+                        query = query + table + " union " + union_modifier + " select " + column_order_string + " from "
+                    else:
+                        query = query + table + ";"
+                        
+                rows = self.execute(query, silent)
+                
+                query = "select * into " + result_table_name + " from _temp_;"
+                self.execute(query, silent)
+                
+                query = "drop table _temp_;"
+                self.execute(query, silent)
+                
+                return rows
+            
+            else:
+                
+                query = "create table " + result_table_name + " as select " + column_order_string + " from "
+                        
+                for i in range(len(src_table_array)):
+                    table = src_table_array[i]
+                    if i != len(src_table_array) - 1:
+                        query = query + table + " union " + union_modifier + " select " + column_order_string + " from "
+                    else:
+                        query = query + table + ";"
+                        
+                rows = self.execute(query, silent)
+                
+                return rows
             
         except Exception, e:
             
@@ -430,7 +460,7 @@ class PSQLHandler():
         
         try:
             
-            column_data = [("price", "bigint"), ("pricem2", "bigint"), ("currentdate", "date")]
+            column_data = [("price", "bigint"), ("pricem2", "bigint"), ("date", "date")]
             
             for item in column_data:
                 
@@ -439,7 +469,7 @@ class PSQLHandler():
                 
                 if self.isColumnExistsInTable(column_name, table_name):
                     
-                    current_column_type = psql.getColumnType(column_name, table_name)
+                    current_column_type = self.getColumnType(column_name, table_name)
                     
                     if current_column_type != new_column_type:
                         
@@ -460,7 +490,7 @@ class PSQLHandler():
                             
                             query = "delete from " + table_name + " where " + column_name + " = '';"
                             self.execute(query)
-                            query = "update " + table_name + " set " + column_name + " = to_date(" + column_name + ", 'YYYY-MM-DD');"
+                            query = "update " + table_name + " set " + column_name + " = to_date(" + column_name + ", 'DD.MM.YYYY');"
                             self.execute(query)
                             
                             
@@ -518,7 +548,7 @@ class PSQLHandler():
         return
     
     
-    def getConfidenceInterval(self, column_name, table_name, confidence_level = 0.05, silent = False):
+    def getConfidenceInterval(self, column_name, table_name, confidence_level = 5, silent = False):
         
         try:
             
@@ -529,7 +559,7 @@ class PSQLHandler():
             rows = self.execute(query, silent)
             rows =  np.asarray( [int(row[0]) for row in rows] )
             
-            limits = np.percentile(rows, [5, 95])
+            limits = np.percentile(rows, [confidence_level, 100 - confidence_level])
             
             return limits
              
@@ -574,27 +604,25 @@ class PSQLHandler():
         return
     
 
-psql = PSQLHandler()
-limits = psql.getConfidenceInterval("pricem2", "main")
-filter_condition = [["pricem2", limits]]
-
-psql.filterTableByIntervalFilter("main", "main_conflim_pricem2", filter_condition)
-
-
-#     
-# psql.standardizeTableColumns("raw_*")
+# psql = PSQLHandler()
 #  
-# psql.dropTablesByPattern(table_name_pattern)
-#  
-# print len(psql.getTableArrayByPattern(table_name_pattern))
-#  
-# dest_table = "raw_data"
-# filename = "C:\\CIAN_DATA\\MSK\\SELL\\2015-02-23___01-19\\RESULT_0.txt"
-
-# file_columns_list = psql.getColumnsListFromCSV(filename)
-# query = psql.getCreateTableQuery(dest_table, file_columns_list)
+# array = psql.getTableArrayByPattern("raw_*")
+# result_columns_list = ["id", "link", "nrooms", "price", "pricem2", "currentdate"]
+# 
+# psql.dropTablesByPattern("^main*")
+# psql.unionTables(array, "main", result_columns_list)
+# 
+# psql.getDeduplicatedTableSimple("main")
+#   
+# limits = psql.getConfidenceInterval("pricem2", "main", confidence_level = 10)
+# filter_condition = [["pricem2", limits]]
+# psql.filterTableByIntervalFilter("main", "main_conflim_pricem2", filter_condition)
+# 
+# 
+# query = "drop table stats;"
 # psql.execute(query)
-# query = psql.getLoadFromCsvQuery(dest_table, filename)
-# psql.execute(query)
+# 
+# query = "select nrooms, avg(pricem2), count(pricem2), currentdate as date into stats from \
+#          main_conflim_pricem2 group by nrooms, currentdate order by nrooms, currentdate asc;"
 #  
-# psql.getDeduplicatedTableSimple(dest_table)
+# psql.execute(query)

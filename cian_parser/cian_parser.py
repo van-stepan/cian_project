@@ -96,19 +96,20 @@ class CianParser:
     
     def getAdID(self, ad):
         
-        aid = u"."
+        aid = -1
         aid_search_pattern = "./@id"
         try:
             aid_objects = ad.xpath(aid_search_pattern)
             if aid_objects != []:
-                aid = aid_objects[0].split(u"_")[1]
+                aid = int(aid_objects[0].split(u"_")[1])
             else:
-                aid = u"."
+                aid = -1
         except Exception, e:
             
             msg = "ERROR (getAdID): " + repr(e)
             print msg
             logging.error(msg)
+            aid = -1
             pass
         
         return aid
@@ -123,8 +124,8 @@ class CianParser:
             
         try:
             ID = self.getAdID(ad)
-            if ID != u".":
-                link = link + ID
+            if ID != -1:
+                link = link + str(ID)
                 
         except Exception, e:
             
@@ -162,7 +163,7 @@ class CianParser:
     
     def getPrice(self, ad, opcode):
         
-        price = u"."
+        price = -1
         if self.page != u".":
             
             try:
@@ -181,13 +182,14 @@ class CianParser:
                 try:
                     
                     price = price_object[0].text_content()
-                    price = re.sub("[^0-9]", "", price)
+                    price = int( re.sub("[^0-9]", "", price) )
                     
                 except Exception, e:
                     
                     msg = "ERROR (getPrice -> price cleansing): " + repr(e)
                     print msg
                     logging.error(msg)
+                    price = -1
                     pass
                 
             except Exception, e:
@@ -195,13 +197,14 @@ class CianParser:
                 msg = "ERROR (getPrice): " + repr(e)
                 print msg
                 logging.error(msg)
+                price = -1
             
         return price
     
     
     def getPricePerSquareMeter(self, ad):
         
-        price_sqm = "."
+        price_sqm = -1
         if self.page != ".":
             
             try:
@@ -210,14 +213,14 @@ class CianParser:
                 price_sqm_object = find_price_sqm_div(ad)
                 price_sqm = price_sqm_object[0].text_content()
                 price_sqm = price_sqm.replace(u"м2", "")
-                price_sqm = re.sub("[^0-9]", "", price_sqm)
+                price_sqm = int( re.sub("[^0-9]", "", price_sqm) )
                 
             except Exception, e:
                 
                 msg = "ERROR (getPricePerSquareMeter): " + repr(e)
                 print msg
                 logging.error(msg)
-                price_sqm = "."
+                price_sqm = -1
                 pass
             
         return price_sqm
@@ -406,23 +409,28 @@ class CianParser:
     
     def getMinutesToMetro(self, ad):
         
-        min_to_metro = "."
+        min_to_metro = -1
         if self.page != ".":
             
             try:
                 
                 min_to_metro_object = ad.xpath(".//div[@class = 'objects_item_metro']/span[@class = 'objects_item_metro_comment']")
                 if min_to_metro_object != []:
+                    
                     min_to_metro = min_to_metro_object[0].text_content().strip()
-                    min_to_metro = re.sub("[^0-9]", "", min_to_metro)
-                    if min_to_metro.strip() == "":
-                        min_to_metro = '.'
+                    
+                    try:
+                        min_to_metro = int(re.sub("[^0-9]", "", min_to_metro))
+                    except:
+                        min_to_metro = -1
+                        pass
                         
             except Exception, e:
                 
                 msg = "ERROR (getMinutesToMetro): " + repr(e)
                 print msg
                 logging.error(msg)
+                min_to_metro = -1
                 pass
 
         return min_to_metro
@@ -457,10 +465,10 @@ class CianParser:
     
     def getMinToMetroConverted(self, mins, bywhat):
         
-        mins_converted = '.'
+        mins_converted = -1
         try:
             
-            if mins != ".":
+            if mins != -1:
                 
                 if bywhat == 'АВТО':
                     mins_converted = int(mins) * 10
@@ -472,9 +480,10 @@ class CianParser:
             msg = "ERROR (getMinToMetroConverted): " + repr(e)
             print msg
             logging.error(msg)
+            mins_converted = -1
             pass
         
-        return str(mins_converted)
+        return mins_converted
         
         
     
@@ -486,7 +495,7 @@ class CianParser:
     
     def getAreaTotal(self, ad):
         
-        area_total = "."
+        area_total = -1
         if self.page != ".":
             
             try:
@@ -496,7 +505,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Общая") != -1:
-                            area_total = re.sub("[^0-9]", "", text)
+                            area_total = int(re.sub("[^0-9]", "", text))
                             break
                         
             except Exception, e:
@@ -504,6 +513,7 @@ class CianParser:
                 msg = "ERROR (getAreaTotal): " + repr(e)
                 print msg
                 logging.error(msg)
+                area_total = -1
                 pass
 
         return area_total
@@ -511,7 +521,7 @@ class CianParser:
     
     def getAreaBedroom(self, ad):
         
-        area_bedroom = "."
+        area_bedroom = -1
         if self.page != ".":
             
             try:
@@ -521,7 +531,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Жилая") == -1 and text.find("Кухня") == -1 and text.find("Общая") == -1:
-                            area_bedroom = re.sub("[^0-9]", "", text)
+                            area_bedroom = int(re.sub("[^0-9]", "", text))
                             break
                         
             except Exception, e:
@@ -529,6 +539,7 @@ class CianParser:
                 msg = "ERROR (getAreaBedroom): " + repr(e)
                 print msg
                 logging.error(msg)
+                area_bedroom = -1
                 pass
 
         return area_bedroom
@@ -537,7 +548,7 @@ class CianParser:
     
     def getAreaKitchen(self, ad):
         
-        area_kitchen = "."
+        area_kitchen = -1
         if self.page != ".":
             
             try:
@@ -547,7 +558,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Кухня") != -1:
-                            area_kitchen = re.sub("[^0-9]", "", text)
+                            area_kitchen = int(re.sub("[^0-9]", "", text))
                             break
                         
             except Exception, e:
@@ -555,6 +566,7 @@ class CianParser:
                 msg = "ERROR (getAreaKitchen): " + repr(e)
                 print msg
                 logging.error(msg)
+                area_kitchen = -1
                 pass
 
         return area_kitchen
@@ -562,7 +574,7 @@ class CianParser:
 
     def getAreaLiving(self, ad):
         
-        area_living = "."
+        area_living = -1
         if self.page != ".":
             
             try:
@@ -572,7 +584,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Жилая") != -1:
-                            area_living = re.sub("[^0-9]", "", text)
+                            area_living = int(re.sub("[^0-9]", "", text))
                             break
                         
             except Exception, e:
@@ -580,6 +592,7 @@ class CianParser:
                 msg = "ERROR (getAreaLiving): " + repr(e)
                 print msg
                 logging.error(msg)
+                area_living = -1
                 pass
 
         return area_living
@@ -591,7 +604,7 @@ class CianParser:
 
     def getFlatFloor(self, ad):
         
-        floor = "."
+        floor = -1
         if self.page != ".":
             
             try:
@@ -599,20 +612,21 @@ class CianParser:
                 floor_objects = ad.xpath(".//td[@class = 'objects_item_info_col_5']/div")
                 if floor_objects != []:
                     text = floor_objects[0].text_content().strip().replace("м2", "")
-                    floor = text.split("/")[0]
+                    floor = int(text.split("/")[0])
                     
             except Exception, e:
                 
                 msg = "ERROR (getFlatFloor): " + repr(e)
                 print msg
                 logging.error(msg)
+                floor = -1
                 pass
 
         return floor
     
     def getMaxFloor(self, ad):
         
-        max_floor = "."
+        max_floor = -1
         if self.page != ".":
             
             try:
@@ -620,13 +634,14 @@ class CianParser:
                 floor_objects = ad.xpath(".//td[@class = 'objects_item_info_col_5']/div")
                 if floor_objects != []:
                     text = floor_objects[0].text_content().strip().replace("м2", "")
-                    max_floor = text.split(" ")[0].strip("\n").replace("\n", "").replace("/", "")
+                    max_floor = int( text.split(" ")[0].strip("\n").replace("\n", "").replace("/", "") )
                     
             except Exception, e:
                 
                 msg = "ERROR (getMaxFloor): " + repr(e)
                 print msg
                 logging.error(msg)
+                max_floor = -1
                 pass
 
         return max_floor
@@ -1187,10 +1202,10 @@ class CianParser:
 #             card.append(["Text_NewBuilding", self.getTextIsNewBuilding(ad)])
             
             # DATES and TIMINGS
-            card.append(["PostingTime", self.getAdPostingTime(ad)])
-            card.append(["PostingDate", self.getAdPostingDate(ad)])
-            card.append(["CurrentTime", self.getCurrentTime()])
-            card.append(["CurrentDate", self.getCurrentDate()])
+#             card.append(["PostingTime", self.getAdPostingTime(ad)])
+#             card.append(["PostingDate", self.getAdPostingDate(ad)])
+#             card.append(["CurrentTime", self.getCurrentTime()])
+            card.append(["Date", self.getCurrentDate()])
             
             return card
         
@@ -1233,7 +1248,7 @@ class CianParser:
                         line = u""
                         for j in range(len(ad_card)):
                             if j != len(ad_card) - 1:
-                                line = line + str(ad_card[j][0]) + u" | "
+                                line = line + str(ad_card[j][0]) + u"|"
                             else:
                                 line = line + str(ad_card[j][0]) + u"\n"
                         lines.append(codecs.encode(line, 'utf8'))
@@ -1247,9 +1262,9 @@ class CianParser:
                     line = u""
                     for j in range(len(ad_card)):
                         if j != len(ad_card) - 1:
-                            line = line + unicode(ad_card[j][1]) + " | "
+                            line = line + str(ad_card[j][1]) + "|"
                         else:
-                            line = line + unicode(ad_card[j][1]) + "\n"
+                            line = line + str(ad_card[j][1]) + "\n"
                     lines.append(codecs.encode(line, 'utf8'))
                 except Exception, e:
                     print "ERROR (putAdCardsToTXT -> accumulating lines - 2): " + repr(e)
