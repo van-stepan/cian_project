@@ -92,18 +92,18 @@ opcode = "SELL"
 
 
 # UPLOADING
-   
+    
 uploader = cian_uploader.cian_uploader.CianPageUploader(dir, url_pattern, nrooms)
 uploader.uploadPages()
-     
-# # PARSING
       
+# PARSING
+
 page_file_pattern = dicts.page_file_pattern
 resfile_part_pattern = dicts.resfile_part_pattern
        
 cp = cian_parser.cian_parser.CianParser()
 for k in nrooms:
-                   
+                     
     try:
         page_filenames_all = []
         page_filenames = glob.glob1(dir, page_file_pattern + "_" + str(k) + "*.txt")
@@ -113,27 +113,26 @@ for k in nrooms:
             page_filenames_all.append(page_filenames[i])
     except:
         pass
-                      
-                      
+                        
+                        
     if page_filenames_all != []:
         txt_filename = os.path.join(dir, resfile_part_pattern + str(k) + ".txt")
         cp.putPageAdsFromFileToTXT(txt_filename, page_filenames_all, opcode)
-               
-               
+                 
+                 
     for page_filename in page_filenames_all:
         print page_filename
-               
-               
+                 
+                 
     try:
         for page_filename in page_filenames_all:
             os.remove(page_filename)
     except:
         pass
 
-# 
-# dir = "C:\\CIAN_DATA\\MSK\\SELL\\2015-03-08___23-24"
-# resfile_part_pattern = dicts.resfile_part_pattern
 
+# dir = "C:\\CIAN_DATA\\MSK\\SELL\\2015-03-11___00-10"
+# result_file = os.path.join(dir, "RESULT_ALL.txt")
 result_file = utilities.mergeRoomwiseFiles(dir, resfile_part_pattern)
 psqlh = psql.PSQLHandler()
 

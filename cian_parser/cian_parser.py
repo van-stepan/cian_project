@@ -182,7 +182,8 @@ class CianParser:
                 try:
                     
                     price = price_object[0].text_content()
-                    price = int( re.sub("[^0-9]", "", price) )
+                    price = price.replace(u"р.", "")
+                    price = int( re.sub("[^0-9,.]", "", price).replace(",", ".") )
                     
                 except Exception, e:
                     
@@ -213,7 +214,8 @@ class CianParser:
                 price_sqm_object = find_price_sqm_div(ad)
                 price_sqm = price_sqm_object[0].text_content()
                 price_sqm = price_sqm.replace(u"м2", "")
-                price_sqm = int( re.sub("[^0-9]", "", price_sqm) )
+                price_sqm = price_sqm.replace(u"р.", "")
+                price_sqm = int( re.sub("[^0-9,.]", "", price_sqm).replace(",", ".") )
                 
             except Exception, e:
                 
@@ -266,7 +268,16 @@ class CianParser:
             
             try:
                 city_object = ad.xpath(".//div[@class = 'objects_item_addr']")
-                city = city_object[0].text_content().strip().replace("\"", "").replace("\'", "")
+                city = city_object[0].text_content().strip()\
+                                        .replace("\n", "")\
+                                        .replace("\"", "")\
+                                        .replace("\'", "")\
+                                        .replace("|", "I")\
+                                        .replace("&quot", "")\
+                                        .replace("&amp", "")\
+                                        .replace("&lt", "")\
+                                        .replace("&gt", "")
+                    
             except Exception, e:
                 
                 msg = "ERROR (getCity): " + repr(e)
@@ -286,7 +297,15 @@ class CianParser:
                 
                 city_object = ad.xpath(".//div[@class = 'objects_item_addr']/a[contains(@href, 'raion') and not(contains(@href, 'city'))]")
                 if city_object != []:
-                    raion = city_object[0].text_content().strip().replace("\"", "").replace("\'", "")
+                    raion = city_object[0].text_content().strip()\
+                                            .replace("\n", "")\
+                                            .replace("\"", "")\
+                                            .replace("\'", "")\
+                                            .replace("|", "I")\
+                                            .replace("&quot", "")\
+                                            .replace("&amp", "")\
+                                            .replace("&lt", "")\
+                                            .replace("&gt", "")
                     
             except Exception, e:
                 
@@ -307,7 +326,15 @@ class CianParser:
                 
                 city_object = ad.xpath(".//div[@class = 'objects_item_addr']/a[contains(@href, 'raion') and contains(@href, 'city')]")
                 if city_object != []:
-                    raion_city = city_object[0].text_content().strip().replace("\"", "").replace("\'", "")
+                    raion_city = city_object[0].text_content().strip()\
+                                                .replace("\n", "")\
+                                                .replace("\"", "")\
+                                                .replace("\'", "")\
+                                                .replace("|", "I")\
+                                                .replace("&quot", "")\
+                                                .replace("&amp", "")\
+                                                .replace("&lt", "")\
+                                                .replace("&gt", "")
                     
             except Exception, e:
                 
@@ -349,7 +376,15 @@ class CianParser:
                 
                 city_object = ad.xpath(".//div[@class = 'objects_item_addr']/a[contains(@href, 'street') and contains(@href, 'house')]")
                 if city_object != []:
-                    house = city_object[0].text_content().strip()
+                    house = city_object[0].text_content().strip()\
+                                            .replace("\n", "")\
+                                            .replace("\"", "")\
+                                            .replace("\'", "")\
+                                            .replace("|", "I")\
+                                            .replace("&quot", "")\
+                                            .replace("&amp", "")\
+                                            .replace("&lt", "")\
+                                            .replace("&gt", "")
                     
             except Exception, e:
                 
@@ -505,7 +540,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Общая") != -1:
-                            area_total = int(re.sub("[^0-9]", "", text))
+                            area_total = int( re.sub("[^0-9,.]", "", text).replace(",", ".") )
                             break
                         
             except Exception, e:
@@ -531,7 +566,35 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Жилая") == -1 and text.find("Кухня") == -1 and text.find("Общая") == -1:
-                            area_bedroom = int(re.sub("[^0-9]", "", text))
+                            
+                            try:
+                            
+                                area_bedroom = int( re.sub("[^0-9,.]", "", text).replace(",", ".") )
+                            
+                            except:
+                                
+                                text = re.sub("[^0-9,.+-]", " ", text)
+                                text = re.sub("\s+", " ", text)
+                                text = text.strip().strip("\n")
+                                
+                                if text.find(u"+") != -1:
+                                    text = text.replace("+", "|")
+                                else:
+                                    if text.find(u"-") != -1:
+                                        text = text.replace("-", "|")
+                                    else:
+                                        text = text.replace(" ", "|")                                       
+                                area_bedroom_parts = text.split("|")
+                                
+                                area_bedroom = 0
+                                
+                                for part in area_bedroom_parts:
+                                    print part
+                                    part = part.replace(",", ".").strip()
+                                    area_bedroom = area_bedroom + int(part)
+                                    
+                                pass
+                            
                             break
                         
             except Exception, e:
@@ -558,7 +621,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Кухня") != -1:
-                            area_kitchen = int(re.sub("[^0-9]", "", text))
+                            area_kitchen = int( re.sub("[^0-9,.]", "", text).replace(",", ".") )
                             break
                         
             except Exception, e:
@@ -584,7 +647,7 @@ class CianParser:
                     for area_object in area_objects:
                         text = area_object.text_content().strip().replace("м2", "")
                         if text.find("Жилая") != -1:
-                            area_living = int(re.sub("[^0-9]", "", text))
+                            area_living = int( re.sub("[^0-9,.]", "", text).replace(",", ".") )
                             break
                         
             except Exception, e:
@@ -612,7 +675,12 @@ class CianParser:
                 floor_objects = ad.xpath(".//td[@class = 'objects_item_info_col_5']/div")
                 if floor_objects != []:
                     text = floor_objects[0].text_content().strip().replace("м2", "")
-                    floor = int(text.split("/")[0])
+                    floor_parts = re.sub("[^0-9/]", "", text).split("/")
+                    if len(floor_parts) > 0:
+                        if floor_parts[0] != '':
+                            floor = int( floor_parts[0] )
+                        else:
+                            floor = -1
                     
             except Exception, e:
                 
@@ -634,7 +702,11 @@ class CianParser:
                 floor_objects = ad.xpath(".//td[@class = 'objects_item_info_col_5']/div")
                 if floor_objects != []:
                     text = floor_objects[0].text_content().strip().replace("м2", "")
-                    max_floor = int( text.split(" ")[0].strip("\n").replace("\n", "").replace("/", "") )
+                    max_floor_parts = re.sub("[^0-9/]", "", text).split("/")
+                    if len(max_floor_parts) > 1:
+                        max_floor = int( max_floor_parts[1] )
+                    else:
+                        max_floor = -1
                     
             except Exception, e:
                 
@@ -793,11 +865,20 @@ class CianParser:
                 if info_items != []:
                     for item in info_items:
                         text = item.text_content().strip()
-                        code = text.split(" ")[1]
-                        if code[0] == "9":
-                            phone = text.replace("+7", "8").replace(" ", "-").replace("\n", "")
-                            break
+                        
+                        try:
+                            code = text.split(" ")[1]
+                            if code[0] == "9":
+                                phone = text.replace("+7", "8").replace(" ", "-").replace("\n", "")
+                                break
+                        except:
+                            continue
+                            pass
+                        
             except Exception, e:
+                
+                for i in range(len(info_items)):
+                    print i, info_items[i].text_content().strip()
                 print "ERROR (getRealtorMobilePhone): " + repr(e)
                 pass
 
@@ -1158,8 +1239,9 @@ class CianParser:
             card.append(["Floor", self.getFlatFloor(ad)])
             card.append(["FloorsTotal", self.getMaxFloor(ad)])
             card.append(["HouseType", self.getHouseType(ad)]) # !!!
+            
             card.append(["AreaTotal", self.getAreaTotal(ad)])
-            card.append(["AreaBedroom", self.getAreaBedroom(ad)])
+#             card.append(["AreaBedroom", self.getAreaBedroom(ad)])
             card.append(["AreaKitchen", self.getAreaKitchen(ad)])
             card.append(["AreaLiving", self.getAreaLiving(ad)])
             

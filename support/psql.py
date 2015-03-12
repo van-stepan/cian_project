@@ -3,6 +3,7 @@
 import psycopg2
 import logging
 import re
+import os
 import numpy as np
 from scipy import stats
 
@@ -28,7 +29,7 @@ columns_dictionary_total = {"Link" :  "varchar",
                       "HouseType" :  "varchar",
                       
                       "AreaTotal" :  "bigint",
-                      "AreaBedroom" :  "bigint",
+#                       "AreaBedroom" :  "bigint",
                       "AreaKitchen" :  "bigint",
                       "AreaLiving" :  "bigint",
                       
@@ -76,7 +77,7 @@ columns_list_total =      [["Link", "varchar"],
                       ["HouseType", "varchar"], 
                       
                       ["AreaTotal", "bigint"], 
-                      ["AreaBedroom", "bigint"], 
+#                       ["AreaBedroom", "bigint"], 
                       ["AreaKitchen", "bigint"], 
                       ["AreaLiving", "bigint"], 
                       
@@ -370,7 +371,14 @@ class PSQLHandler():
     
     
     
-    def unionTables(self, src_table_array, result_table_name, result_columns_list, remove_duplicates = True, silent = False):
+    def unionTables(self, src_table_array, 
+                    result_table_name, 
+                    result_columns_list = [], 
+                    remove_duplicates = True, 
+                    silent = False):
+        
+        if result_columns_list == []:
+            result_columns_list = [col[0] for col in self.getFullColumnsListByTableArray(src_table_array)]
         
         try:
             
@@ -603,10 +611,75 @@ class PSQLHandler():
          
         return
     
-
 # psql = PSQLHandler()
+
+
+
 #  
+# array = psql.getTableArrayByPattern("raw_.*")
+# for table in array:
+#     for item in psql.getTableColumnsList(table):
+#         print item
+# 
+# psql.unionTables(array, "main")
+
+
+# dir = "C:\\CIAN_DATA\\MSK\\SELL\\2015-03-09___00-39"
+# files = ["RESULT_0.txt", "RESULT_1.txt", "RESULT_3.txt", "RESULT_4.txt", "RESULT_5.txt", "RESULT_6.txt"]
+#  
+# for f in files:
+#      
+#     result_file = os.path.join(dir, f)
+#     dest_table = "raw_" + os.path.basename(dir).replace("-", "_") + "_" + f.split(".")[0]
+#      
+#     query = "ALTER TABLE " + dest_table + " DROP COLUMN areabedroom;"
+#     psql.execute(query)
+
+#     psql.loadCIANResultIntoPSQL(dest_table, result_file)
+ 
 # array = psql.getTableArrayByPattern("raw_*")
+# print array
+#  
+# for table in array:
+#        
+#     cols = ["floorstotal", "floor"]
+#        
+#     for col in cols:
+#        
+#         if psql.isColumnExistsInTable(col, table, silent = True):
+#         
+# #             query = "SELECT data_type, column_name FROM information_schema.columns where table_name = '" + table + "' and column_name = '" + col + "';"
+# #             rows = psql.execute(query)
+# #             
+# #             print rows
+# #             query = "UPDATE " + table + " SET " + col + " = replace(" + col + ", ' ', '');"
+# #             rows = psql.execute(query)
+#             query = "UPDATE " + table + " SET " + col + " = '-1' where " + col + " not similar to '%[0-9.\s]+%' ;" # = '.' or " + col + " = '';"
+#             psql.execute(query)
+#                 
+#             query = "ALTER TABLE " + table + " ALTER COLUMN " + col + " TYPE bigint USING " + col + "::bigint;"
+#             psql.execute(query)
+
+
+# for table in array:
+#       
+#     if psql.isColumnExistsInTable("currentdate", table):
+#         query = "ALTER TABLE " + table + " RENAME COLUMN currentdate TO date;"
+#         psql.execute(query)
+#     if psql.isColumnExistsInTable("postingdate", table):
+#         query = "ALTER TABLE " + table + " DROP COLUMN postingdate;"
+#         psql.execute(query)
+#     if psql.isColumnExistsInTable("postingtime", table):
+#         query = "ALTER TABLE " + table + " DROP COLUMN postingtime;"
+#         psql.execute(query)
+#     if psql.isColumnExistsInTable("currenttime", table):
+#         query = "ALTER TABLE " + table + " DROP COLUMN currenttime;"
+#         psql.execute(query)
+#  
+# columns = []
+     
+     
+ 
 # result_columns_list = ["id", "link", "nrooms", "price", "pricem2", "currentdate"]
 # 
 # psql.dropTablesByPattern("^main*")

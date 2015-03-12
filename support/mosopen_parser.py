@@ -30,6 +30,7 @@ if not os.path.exists(file):
     
 fid = open(file, 'a')
 
+flag = 0
 
 for region in regions:
     regions_data.append( [region.get("href"), region.text_content()] )
@@ -41,35 +42,60 @@ for i in range(len(regions_data)):
     region_link = item[0]
     region_name = item[1]
     
+    if region_name.find("Хамовники") != -1 and flag == 0:
+        flag = 1
+        
+    if flag == 0:
+        continue
+    
     streets_page = urllib2.urlopen(region_link + "/streets")
     streets_list_doc = html.document_fromstring(streets_page.read())
     streets_query = etree.XPath("//div[@class = 'double_part']//a")
     streets = streets_query(streets_list_doc)
     
-    if streets == []:
-        streets_query = etree.XPath("//p[@class = 'compact']/following-sibling::ul[1]//a")
-        streets = streets_query(streets_list_doc)
+    try:
         
-    streets_data = []
-    
-    for street in streets:
-        streets_data.append( [street.get("href"), street.text_content()] )
-        
-    for street_item in streets_data:
-        
-        street_link = street_item[0]
-        street_name = street_item[1]
-        
-        houses_page = urllib2.urlopen(street_link)
-        houses_list_doc = html.document_fromstring(houses_page.read())
-        houses_query = etree.XPath("//p//a[contains(@href, 'address')]")
-        houses = houses_query(houses_list_doc)
-        
-        for house in houses:
-        
-            line = region_name + " | " + street_name + " | " + house.text_content()
-            fid.write(line + "\n")
-            print line
+        if streets == []:
+            streets_query = etree.XPath("//p[@class = 'compact']/following-sibling::ul[1]//a")
+            streets = streets_query(streets_list_doc)
             
+        streets_data = []
+        
+        for street in streets:
+            streets_data.append( [street.get("href"), street.text_content()] )
+            
+        for street_item in streets_data:
+            
+            try:
+                
+                street_link = street_item[0]
+                street_name = street_item[1]
+                
+                houses_page = urllib2.urlopen(street_link)
+                houses_list_doc = html.document_fromstring(houses_page.read())
+                houses_query = etree.XPath("//p//a[contains(@href, 'address')]")
+                houses = houses_query(houses_list_doc)
+                
+                for house in houses:
+                    
+                    try:
+                    
+                        line = region_name + " | " + street_name + " | " + house.text_content()
+                        fid.write(line + "\n")
+                        print line
+                        
+                    except:
+                        
+                        print "HOUSES - INNER" 
+                        pass
+                    
+            except:
+                print "STREETS - INNER" 
+                pass
+            
+    except:
+        print "STREETS - OUTER" 
+        pass
+    
 fid.close()
         

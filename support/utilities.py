@@ -21,7 +21,9 @@ def mergeRoomwiseFiles(dir, file_pattern, dlm = "|"):
     result_file = os.path.join(dir, file_pattern + "ALL.txt")
     lines = []
     
-    for file in files:
+    for k in range(len(files)):
+        
+        file = files[k]
         
         fid = open(file)
         partial_lines = fid.readlines()
@@ -29,6 +31,9 @@ def mergeRoomwiseFiles(dir, file_pattern, dlm = "|"):
         
         partial_lines_buf = []
         nfields = partial_lines[0].count(dlm)
+        
+        if k != 0:
+            partial_lines = partial_lines[1:]
         
         flag = 0
         for i in range(len(partial_lines)):
