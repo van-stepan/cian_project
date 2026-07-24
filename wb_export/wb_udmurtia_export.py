@@ -448,14 +448,22 @@ def load_token_from_config(config_file: str, key_path: List[str]) -> str:
                 f"В CONFIG нет ключа '{k}' по пути {'.'.join(key_path)}.")
 
     if isinstance(obj, dict):
+        # Структура вида {"headers": {"Authorization": "<токен>"}} — берём
+        # значение заголовка Authorization как есть (это и есть токен WB).
+        hdr = obj.get("headers")
+        if isinstance(hdr, dict):
+            auth = hdr.get("Authorization") or hdr.get("authorization")
+            if isinstance(auth, str) and auth.strip():
+                return auth.strip()
+        # Либо прямой ключ токена в словаре.
         for tk in ("wb", "token", "api_token", "apiToken",
-                   "key", "api_key", "apikey"):
+                   "key", "api_key", "apikey", "Authorization"):
             val = obj.get(tk)
             if isinstance(val, str) and val.strip():
                 return val.strip()
         raise SystemExit(
             f"По пути {'.'.join(key_path)} лежит словарь без строкового токена. "
-            f"Уточните --config-key.")
+            f"Уточните --config-key (напр. добавьте .headers.Authorization).")
     if not isinstance(obj, str) or not obj.strip():
         raise SystemExit(
             f"По пути {'.'.join(key_path)} не строковый токен (тип {type(obj).__name__}).")
