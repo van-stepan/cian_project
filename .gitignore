@@ -29,3 +29,9 @@ RCS
 RCSLOG
 SCCS
 _$*
+
+# WB export: секреты и результаты выгрузки — не коммитим
+CONFIG.py
+wb_export/CONFIG.py
+udmurtia_wb_export*
+*_acts/

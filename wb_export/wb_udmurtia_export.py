@@ -410,6 +410,58 @@ def parse_date(value: str) -> dt.date:
     return dt.datetime.strptime(value, "%Y-%m-%d").date()
 
 
+def load_token_from_config(config_file: str, key_path: List[str]) -> str:
+    """Достаёт токен из CONFIG.py по пути ключей (напр. credentials.ru.mag1.wb).
+
+    Первый элемент пути — переменная модуля, дальше — обращения по ключу
+    словаря. Если в конце оказался словарь — ищем в нём типичный ключ токена
+    (wb/token/api_token/...). CONFIG.py исполняется как обычный модуль, поэтому
+    держите его вне git (в .gitignore).
+    """
+    import importlib.util
+
+    if os.path.isdir(config_file):
+        config_file = os.path.join(config_file, "CONFIG.py")
+    if not os.path.isfile(config_file):
+        raise SystemExit(f"CONFIG не найден: {config_file}")
+
+    spec = importlib.util.spec_from_file_location("wb_config", config_file)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"Не удалось прочитать {config_file}.")
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as e:  # noqa: BLE001 — покажем причину пользователю
+        raise SystemExit(f"Не удалось загрузить {config_file}: {e}")
+
+    if not key_path:
+        raise SystemExit("Пустой путь к токену (--config-key).")
+    try:
+        obj: Any = getattr(module, key_path[0])
+    except AttributeError:
+        raise SystemExit(f"В CONFIG нет переменной '{key_path[0]}'.")
+    for k in key_path[1:]:
+        try:
+            obj = obj[k]
+        except (KeyError, TypeError, IndexError):
+            raise SystemExit(
+                f"В CONFIG нет ключа '{k}' по пути {'.'.join(key_path)}.")
+
+    if isinstance(obj, dict):
+        for tk in ("wb", "token", "api_token", "apiToken",
+                   "key", "api_key", "apikey"):
+            val = obj.get(tk)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+        raise SystemExit(
+            f"По пути {'.'.join(key_path)} лежит словарь без строкового токена. "
+            f"Уточните --config-key.")
+    if not isinstance(obj, str) or not obj.strip():
+        raise SystemExit(
+            f"По пути {'.'.join(key_path)} не строковый токен (тип {type(obj).__name__}).")
+    return obj.strip()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Выгрузка поставок и приёмок ВБ по складам Удмуртии (Ижевск).")
@@ -443,15 +495,31 @@ def main() -> None:
                              "По умолчанию: приёмк/приемк/acceptance.")
     parser.add_argument("--doc-locale", default="ru",
                         help="Язык категорий документов (ru/en/zh).")
+    # --- источник токена ---
+    parser.add_argument("--config", default=None,
+                        help="Путь к CONFIG.py, откуда взять токен, если не "
+                             "задан WB_API_TOKEN. Пример: "
+                             r'--config "C:\path\CONFIG.py"')
+    parser.add_argument("--config-key", default="credentials.ru.mag1.wb",
+                        help="Путь к токену внутри CONFIG.py через точку "
+                             "(по умолчанию credentials.ru.mag1.wb).")
     args = parser.parse_args()
 
+    # Токен: приоритет у переменной окружения, затем CONFIG.py.
     token = os.environ.get("WB_API_TOKEN")
+    if not token and args.config:
+        token = load_token_from_config(args.config,
+                                       args.config_key.split("."))
+        print(f"Токен взят из {args.config} по пути {args.config_key}.")
     if not token:
         raise SystemExit(
-            "Не задан WB_API_TOKEN. Возьмите ключ в ЛК: Настройки -> Доступ к "
-            "API (категории «Статистика», «Аналитика», а для актов —\n"
-            "«Документы») и выполните:\n"
-            '    export WB_API_TOKEN="ваш_токен"')
+            "Токен не найден. Либо задайте переменную окружения:\n"
+            '    export WB_API_TOKEN="ваш_токен"\n'
+            "либо укажите CONFIG.py:\n"
+            '    --config "C:\\...\\CONFIG.py" '
+            "[--config-key credentials.ru.mag1.wb]\n"
+            "Ключ ЛК: Настройки -> Доступ к API (категории «Статистика», "
+            "«Аналитика», для актов — «Документы»).")
 
     keywords = [k.lower() for k in (args.warehouse or DEFAULT_WAREHOUSE_KEYWORDS)]
     act_keywords = [k.lower() for k in (args.acts_keyword or DEFAULT_ACT_KEYWORDS)]

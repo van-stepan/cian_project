@@ -61,6 +61,26 @@ python3 wb_udmurtia_export.py --date-from 2023-01-01 --date-to 2024-12-31
 python3 wb_udmurtia_export.py --date-from 2023-01-01 --download-acts
 ```
 
+### Токен из CONFIG.py (без ручного export)
+
+Если токен лежит в вашем `CONFIG.py` (напр. `credentials["ru"]["mag1"]["wb"]`),
+можно не задавать переменную окружения, а указать файл — скрипт сам достанет
+токен по пути ключей:
+
+```bash
+# Windows (PowerShell/cmd), путь с русскими папками — в кавычках:
+python wb_udmurtia_export.py --date-from 2023-01-01 --download-acts ^
+  --config "C:\Users\Stepan\Yandex.Disk\WB\ПРОГРАММЫ\PycharmProjects\CONFIG.py"
+
+# путь к токену внутри CONFIG.py по умолчанию credentials.ru.mag1.wb,
+# при необходимости переопределяется:
+#   --config-key credentials.ru.mag2.wb
+```
+
+`WB_API_TOKEN` (если задан) имеет приоритет над `--config`. Если по пути лежит
+словарь, скрипт возьмёт из него типичный ключ токена (`wb`/`token`/...).
+**Держите `CONFIG.py` вне git** (он с секретом) — файл исполняется как модуль.
+
 Полезные служебные режимы (выводят и выходят):
 
 ```bash
@@ -86,6 +106,8 @@ python3 wb_udmurtia_export.py --date-from 2023-01-01 --date-to 2024-12-31 --list
 | `--list-doc-categories`| показать категории документов и выйти                            |
 | `--list-docs`          | выгрузить список документов за период в CSV и выйти               |
 | `--doc-locale`         | язык категорий документов (`ru`/`en`/`zh`, по умолч. `ru`)        |
+| `--config ПУТЬ`        | взять токен из `CONFIG.py` (если нет `WB_API_TOKEN`)              |
+| `--config-key ПУТЬ`    | путь к токену в `CONFIG.py` (по умолч. `credentials.ru.mag1.wb`)  |
 
 ## Результат
 
