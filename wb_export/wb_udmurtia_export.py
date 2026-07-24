@@ -41,8 +41,12 @@ except ImportError:  # Excel-вывод опционален; CSV пишется
 
 
 # --- Эндпоинты официального API Wildberries ---------------------------------
-STATISTICS_BASE = "https://statistics-api.wildberries.ru"
-ANALYTICS_BASE = "https://seller-analytics-api.wildberries.ru"
+# Базовые адреса можно переопределить через окружение (удобно для тестов
+# против локального мок-сервера); по умолчанию — боевые адреса WB.
+STATISTICS_BASE = os.environ.get(
+    "WB_STATISTICS_BASE", "https://statistics-api.wildberries.ru")
+ANALYTICS_BASE = os.environ.get(
+    "WB_ANALYTICS_BASE", "https://seller-analytics-api.wildberries.ru")
 
 INCOMES_PATH = "/api/v1/supplier/incomes"                    # поступления на склад
 ACCEPTANCE_PATH = "/api/v1/analytics/acceptance-report"      # платная приёмка
@@ -150,6 +154,7 @@ def fetch_acceptance(client: WBClient, date_from: dt.date, date_to: dt.date,
     print(f"[2/2] Запрашиваю отчёт о приёмке (акты) "
           f"{date_from} .. {date_to} ...")
     collected: List[Dict[str, Any]] = []
+    seen = set()  # защита от повторов на границах окон
     for win_from, win_to in daterange_windows(date_from, date_to,
                                               ACCEPTANCE_WINDOW_DAYS):
         params = {
@@ -161,8 +166,15 @@ def fetch_acceptance(client: WBClient, date_from: dt.date, date_to: dt.date,
         report = data.get("report", []) if isinstance(data, dict) else []
         for row in report:
             # Привязка к Удмуртии — по incomeId из отфильтрованных поступлений.
-            if not income_ids or row.get("incomeId") in income_ids:
-                collected.append(row)
+            if income_ids and row.get("incomeId") not in income_ids:
+                continue
+            key = (row.get("incomeId"), row.get("nmID"),
+                   row.get("giCreateDate"), row.get("shkCreateDate"),
+                   row.get("count"), row.get("total"))
+            if key in seen:
+                continue
+            seen.add(key)
+            collected.append(row)
         # Бережём лимит запросов между окнами.
         time.sleep(1)
     print(f"    Записей приёмки, относящихся к Удмуртии: {len(collected)}.")
