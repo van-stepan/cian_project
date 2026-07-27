@@ -29,3 +29,6 @@ RCS
 RCSLOG
 SCCS
 _$*
+
+# Local credentials - never commit
+.env
