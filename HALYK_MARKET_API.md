@@ -249,10 +249,43 @@ into one card with a colour switcher appears to be **catalogue-side matching**, 
 controlled via this API. So "join colours into one card like WB" may not be achievable through
 the API as-is. Confirm the intended mechanism with the account manager before relying on it.
 
-**[open / BLOCKER] Wildberries source.** The WB KZ Supplier API token lives in a local
-PyCharm `config.py` on the laptop — it is **not** in this repo or cloud session (searched the
-whole machine + full git history: the only `config.py` is `halyk_market/config.py`). Cloud
-sessions clone only the GitHub repo, and a secret token would be gitignored, so it never
-travels. To proceed, the WB token/export must be supplied to the session (then stored the same
-gitignored way as the Halyk secret). Dry-run first: build the moderation payload and show it
-before submitting.
+**[live] Wildberries source — working.** WB KZ (mag1) Supplier token is in gitignored `.env`
+as `WB_KZ_TOKEN` (expires 2026-12-21). Requires the WB hosts to be allowlisted in the env's
+Custom network policy: `*.wildberries.ru`, `*.wb.ru`, `*.wbbasket.ru`, `*.wbstatic.net`.
+Content API: `POST https://content-api.wildberries.ru/content/v2/get/cards/list`
+(header `Authorization: <token>`, no "Bearer"), body
+`{"settings":{"cursor":{"limit":100},"filter":{"withPhoto":-1}}}`, paginate on
+`cursor.updatedAt`+`nmID`.
+
+**[live] SKU / family convention (confirmed against real vendorCodes):**
+`<caseType>-<phonemodel>-parent-<colorToken>`, e.g. `c7-iphone-17promax-parent-col8`.
+- **family = substring before `-parent-`** (`c7-iphone-17promax`) — the grouping key.
+- colour token after `-parent-` (`col8`) is internal; the real colour name is the WB
+  characteristic **"Цвет"** (col8 → синий/blue). All colours of a family share WB `imtID`.
+- **C7 inventory:** 14 families, 37 SKUs (e.g. `c7-iphone-17promax` and `c7-iphone-17pro`
+  have 7 colours each; samsung families 1–4 each).
+
+**[live] WB→Halyk mapping (first card, `c7-iphone-17promax-parent-col8`, nm 1257637259):**
+- category `20004` "Чехлы для смартфонов" (3rd level) · brand **Bricase — NOT on Halyk**
+- required attrs resolved: Тип[10070]=Накладка(36472), Материал[10078]=Пластик(12398);
+  plus Совместимость[10081]=Apple iPhone 17 Pro Max(1289567), Цвет[10068]=Синий(12801),
+  Вес[10067]=50. Values sent as `classAttrValueId` (confirm id-vs-name on first submit).
+- 8 photos on `basket-44.wbbasket.ru` as `.webp` (download + likely convert to jpg/png for
+  Halyk's `/file/image/upload/multiple`). Barcode (WB skus[0]) = 2048234005949.
+
+**[BLOCKERS before any real submit]**
+1. **Brand** — `Bricase` is not registered on Halyk (5 query variants, all empty); the
+   moderation payload requires a `brand` id. Need an existing Halyk brand id, or register
+   Bricase via the account manager.
+2. **Price + stock + warehouse** — `info.pointByCity` needs price (KZT), city code, Halyk
+   warehouse **point code**, and stock amount. None are in WB data. Stock/price may come from
+   МойСклад; the point code is Halyk-cabinet specific.
+3. Confirm Halyk dimension units (WB gives cm + kg) and whether `.webp` uploads are accepted.
+
+**[open] WB-style colour grouping — still not merchant-controllable via the create API.** On
+WB the colours are separate `nmID` cards grouped by `imtID`; Halyk's create API takes one flat
+card with a single Цвет. Grouping colours into one Halyk card appears catalogue-side. Confirm
+the mechanism with the account manager before promising WB-style variation cards.
+
+Dry-run artifacts for the first card are built and verified (payload + resolved attrs);
+nothing submitted.
