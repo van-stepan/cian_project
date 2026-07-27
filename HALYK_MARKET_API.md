@@ -273,14 +273,25 @@ Content API: `POST https://content-api.wildberries.ru/content/v2/get/cards/list`
 - 8 photos on `basket-44.wbbasket.ru` as `.webp` (download + likely convert to jpg/png for
   Halyk's `/file/image/upload/multiple`). Barcode (WB skus[0]) = 2048234005949.
 
-**[BLOCKERS before any real submit]**
-1. **Brand** — `Bricase` is not registered on Halyk (5 query variants, all empty); the
-   moderation payload requires a `brand` id. Need an existing Halyk brand id, or register
-   Bricase via the account manager.
-2. **Price + stock + warehouse** — `info.pointByCity` needs price (KZT), city code, Halyk
-   warehouse **point code**, and stock amount. None are in WB data. Stock/price may come from
-   МойСклад; the point code is Halyk-cabinet specific.
-3. Confirm Halyk dimension units (WB gives cm + kg) and whether `.webp` uploads are accepted.
+**[resolved] Brand → no-brand.** Bricase is not on Halyk and there is **no brand-create API**
+(search-only; swagger locked; Halyk requires a trademark cert to add a brand — content-team
+action). Decision: use **«Без бренда» = brand id `33006`** (also available: Noname 112117,
+No Name 10721, Generic 25258, Unbranded 106083). To carry the Bricase identity later, ask the
+account manager to register it.
+
+**[resolved] Price → from WB KZ.** `GET https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1000`
+(header `Authorization: <token>`), match `listGoods[].nmID`. First card
+`c7-iphone-17promax` family: **base 15088 / discounted 6035.2 KZT**. Decide base-vs-discounted
+and any Halyk-commission markup before submit.
+
+**[resolved] Photos.** Use the **`big`** size, not `hq` (WB CDN 404s on `hq`). Download webp
+from `basket-44.wbbasket.ru`, convert to JPEG (Pillow), then `POST /file/image/upload/multiple`.
+
+**[BLOCKER — needs Halyk cabinet]** `info.pointByCity` still needs: **warehouse point code**
+(`posName` of a PoS created via `POST api.halykmarket.com/api/merchant/v1/pointofservices/save`),
+**city code** (e.g. 750000000 = Almaty), and **stock amount**. There is no list-GET for points
+(`/pointofservices` → 404), and WB can't supply a Halyk point code. If the shop has no PoS yet,
+one must be created first. Confirm Halyk dimension units (WB gives cm + kg) on first submit.
 
 **[open] WB-style colour grouping — still not merchant-controllable via the create API.** On
 WB the colours are separate `nmID` cards grouped by `imtID`; Halyk's create API takes one flat
