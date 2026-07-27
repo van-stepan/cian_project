@@ -212,3 +212,47 @@ this sandbox **only after** the environment's network access was switched from *
 to **Custom** with those domains allowlisted (claude.ai/code → environment → Network access).
 The block was never geographic — no proxy is involved. If a fresh session gets 403s to
 these hosts, that setting was reset.
+
+---
+
+## 9. Product cards — creating listings [in progress]
+
+Goal: mirror our Wildberries KZ catalogue onto Halyk, starting with the **C7** family.
+Docs: "Загрузка товаров по API" / "Загрузка товаров без прайс-листа по API".
+
+**[decided] Create genuinely new cards — never link to another seller's card.**
+Halyk offers two upload routes; we use the first, not the second:
+
+- ✅ **Create new** (`POST /gw/merchant/public/draft/product/moderation`) — build a fresh
+  card from scratch and send it to moderation. **This is our path.**
+- ❌ **Link/привязка** (`PUT /gw/merchant/public/product/remaining/save-and-map-sku`) —
+  attach our stock/price to another seller's existing card. **Avoid.**
+
+**[live] Create-new flow** (token from §3 authorizes all of these; read steps verified 200):
+1. `GET /gw/merchant/public/skus/search?q=&page=&size=` — check the product isn't already listed.
+2. `GET /gw/merchant/public/category/search?q=&page=&size=` — find the 3rd-level `categoryId`
+   (categories expose `hasVariation`).
+3. `GET /gw/merchant/public/brand/search?q=` — find `brand` id.
+4. `GET /gw/merchant/public/form/product/feature?categoryId=<id>` — per-category attribute
+   form (`attrs[]`, each with id/type/required; ENUM attrs list allowed values).
+5. `POST /gw/merchant/public/file/image/upload/multiple` (multipart `files=@...`) — upload
+   photos, returns media `{id, link}`.
+6. `POST /gw/merchant/public/draft/product/moderation` — submit: name, category, brand,
+   description, `attrs[]`, `media[]`, weight/width/height/depth,
+   `info{ merchantProductCode, pointByCity[], loanPeriod }`. Returns `{id, productDraftStatus:"CHECK"}`.
+7. `GET /gw/merchant/public/draft/product/<id>` — poll moderation status.
+
+**[open] WB-style variation grouping.** The moderation payload is a **flat single card** —
+no "parent"/variation-group field the merchant sets. Halyk's catalogue does have variations
+(`hasVariation:true`, `sku-variations` in image paths), but grouping separate colour SKUs
+into one card with a colour switcher appears to be **catalogue-side matching**, not merchant-
+controlled via this API. So "join colours into one card like WB" may not be achievable through
+the API as-is. Confirm the intended mechanism with the account manager before relying on it.
+
+**[open / BLOCKER] Wildberries source.** The WB KZ Supplier API token lives in a local
+PyCharm `config.py` on the laptop — it is **not** in this repo or cloud session (searched the
+whole machine + full git history: the only `config.py` is `halyk_market/config.py`). Cloud
+sessions clone only the GitHub repo, and a secret token would be gitignored, so it never
+travels. To proceed, the WB token/export must be supplied to the session (then stored the same
+gitignored way as the Halyk secret). Dry-run first: build the moderation payload and show it
+before submitting.
