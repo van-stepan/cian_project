@@ -3,6 +3,13 @@
 
 Secrets are never hardcoded here. They are read from the process environment,
 optionally seeded from a local ``.env`` file that is excluded from git.
+
+The API is split across two hosts:
+
+``gw_base``   https://halykmarket.kz/gw   - token issuance, order listing,
+                                            waybill / OTP / courier lookups
+``api_base``  https://api.halykmarket.com - order mutations and the
+                                            JSON:API relationship endpoints
 """
 
 import os
@@ -11,14 +18,15 @@ import os
 PROD = "prod"
 TEST = "test"
 
-# Token issuer and API gateway live on different hosts.
 ENVIRONMENTS = {
     PROD: {
-        "token_url": "https://halykmarket.kz/gw/auth/token",
+        "gw_base": "https://halykmarket.kz/gw",
         "api_base": "https://api.halykmarket.com",
     },
     TEST: {
-        "token_url": "https://test2.halykmarket.com/gw/auth/token",
+        "gw_base": "https://test2.halykmarket.com/gw",
+        # The documentation only ever names the test gateway; the test host for
+        # the api.* surface is unconfirmed. Override via HALYK_API_BASE if needed.
         "api_base": "https://test2.halykmarket.com",
     },
 }
@@ -71,7 +79,7 @@ def build_client_id(bin_number):
 class Config(object):
 
     def __init__(self, client_id=None, client_secret=None, environment=PROD,
-                 token_url=None, api_base=None):
+                 gw_base=None, api_base=None):
 
         if environment not in ENVIRONMENTS:
             raise ValueError("Unknown environment %r, expected one of %s"
@@ -80,8 +88,12 @@ class Config(object):
         self.environment = environment
         self.client_id = client_id
         self.client_secret = client_secret
-        self.token_url = token_url or ENVIRONMENTS[environment]["token_url"]
+        self.gw_base = (gw_base or ENVIRONMENTS[environment]["gw_base"]).rstrip("/")
         self.api_base = (api_base or ENVIRONMENTS[environment]["api_base"]).rstrip("/")
+
+    @property
+    def token_url(self):
+        return self.gw_base + "/auth/token"
 
     @classmethod
     def from_env(cls, environment=None, dotenv_path=None):
@@ -91,7 +103,7 @@ class Config(object):
         HALYK_BIN          12-digit BIN/IIN, turned into HMM_<bin>
         HALYK_CLIENT_SECRET
         HALYK_ENV          prod | test
-        HALYK_TOKEN_URL    optional override
+        HALYK_GW_BASE      optional override
         HALYK_API_BASE     optional override
         """
 
@@ -110,7 +122,7 @@ class Config(object):
             client_id=client_id,
             client_secret=os.environ.get("HALYK_CLIENT_SECRET"),
             environment=environment,
-            token_url=os.environ.get("HALYK_TOKEN_URL"),
+            gw_base=os.environ.get("HALYK_GW_BASE"),
             api_base=os.environ.get("HALYK_API_BASE"),
         )
 
@@ -143,5 +155,6 @@ class Config(object):
             "client_id": self.client_id,
             "client_secret": shown,
             "token_url": self.token_url,
+            "gw_base": self.gw_base,
             "api_base": self.api_base,
         }

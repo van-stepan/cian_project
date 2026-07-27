@@ -1,160 +1,214 @@
 # Halyk Market — merchant API (memory file)
 
-Working notes for the Halyk Market (Anyqtama) merchant API integration. This is the
-shared memory file for the project: everything we establish about the API lands here so
-a later session does not have to rediscover it.
+Shared memory for the Halyk Market (Anyqtama) merchant API integration —
+"Работа с заказами по API". Everything here has been read from the official docs and,
+where marked, verified against the live production API from our shop.
 
 Primary documentation:
 <https://halyk-market.gitbook.io/anyqtama/massovye-operacii-i-integracii/rabota-s-zakazami-po-api>
+(append `.md` to any GitBook page URL to get clean markdown; the full index is at
+`https://halyk-market.gitbook.io/anyqtama/llms.txt`.)
 
-Each fact below is tagged:
-
-- **[confirmed]** — read out of the official documentation or a Halyk-issued email.
-- **[unverified]** — inferred from search snippets / secondary sources, not yet checked
-  against a live call or the doc page itself.
-- **[open]** — known gap.
+Tags: **[live]** exercised against production and confirmed · **[confirmed]** read from
+the docs · **[open]** still unknown.
 
 ---
 
 ## 1. Credentials
 
-| Field | Value | Source |
-|---|---|---|
-| `client_id` | `HMM_000117600035` | built from BIN/IIN `000117600035` |
-| `client_secret` | stored in local `.env`, never committed | reset email, 27.07.2026 |
+| Field | Value |
+|---|---|
+| `client_id` | `HMM_000117600035` |
+| `client_secret` | in local `.env` / environment, never committed |
+| BIN/IIN | `000117600035` |
 
-**[confirmed]** `client_id` is the shop identifier in the form `HMM_<БИН>` — the doc's
-example is `HMM_000000000000`, twelve digits. Our BIN/IIN is `000117600035`, so the
-client id is `HMM_000117600035`.
+**[live]** `client_id = HMM_ + BIN/IIN`. Our `HMM_000117600035` authenticates against
+production. `client_secret` from the 27.07.2026 reset email (`api-noreply@halykmarket.com`)
+is correct as transcribed from the screenshot — the earlier failure was request encoding,
+not the secret. Still worth rotating eventually, since it has passed through a screenshot
+and a chat.
 
-**[confirmed]** `client_id` is sent by the account manager. `client_secret` is emailed
-automatically when the API is switched on, and re-issued on password reset — the reset
-mail comes from `api-noreply@halykmarket.com` with subject «Новый пароль».
-
-**[open]** The secret currently in `.env` was transcribed from a phone screenshot, and it
-contains characters that are easy to misread in a proportional font — an `O`/`0` pair and
-two bracket characters. If the token call returns 401, re-check the value character by
-character against the original email before assuming anything else is wrong. Rotate the
-secret once the integration works: it has travelled through a screenshot and a chat.
-
-Credentials live in `.env` (gitignored). `.env.example` documents the variables.
+Credentials load from `HALYK_*` environment variables (see §6), or a gitignored `.env`.
+`.env.example` documents them.
 
 ---
 
-## 2. Authorization
+## 2. Two hosts
 
-**[confirmed]** OAuth2 `client_credentials`. Request attributes:
+The API is split across two hosts. The client keeps them separate (`gw_base` / `api_base`).
 
-| Field | Description | Example |
+| Host | Base | Used for |
 |---|---|---|
-| `grant_type` | always `client_credentials` | `client_credentials` |
-| `client_id` | shop id, `HMM_<БИН>` | `HMM_000000000000` |
-| `client_secret` | shop secret key | `xxxxxxxxxxxxxxxxxxxxxx` |
+| `halykmarket.kz` | `/gw` | token, order **listing**, order **detail** (waybill / OTP / courier), product-by-order |
+| `api.halykmarket.com` | `/api/merchant/v1` | order **state changes** + JSON:API relationship reads (entries, product, pickup point) |
 
-Token endpoints:
-
-| Environment | URL | Confidence |
-|---|---|---|
-| prod | `https://halykmarket.kz/gw/auth/token` | [unverified] |
-| test | `https://test2.halykmarket.com/gw/auth/token` | [unverified] |
-
-**[unverified]** Response is the usual OAuth2 shape — `access_token`, `token_type:
-"Bearer"`, `expires_in: 7199` (~2 h). The client caches the token and refreshes it 60 s
-before expiry, and retries once on a 401.
-
-**[open]** Whether the body is form-encoded or JSON is not confirmed. The client sends
-`application/x-www-form-urlencoded`, which is the OAuth2 default; if the gateway rejects
-it, switch `authenticate()` to `json=payload`.
+**[open]** For the test environment the docs only name `test2.halykmarket.com/gw`; the
+test host for the `api.*` surface is unconfirmed. Override with `HALYK_API_BASE` if needed.
 
 ---
 
-## 3. Orders
+## 3. Authorization — [live]
 
-**[unverified]** `GET https://api.halykmarket.com/api/merchant/v1/orders`, with
-`Authorization: Bearer <access_token>`.
+`POST https://halykmarket.kz/gw/auth/token`
 
-Filtering uses bracket syntax — `filter[orders][code]=1234567`. The client's
-`get_orders(filters={"code": ...})` builds that encoding.
+**The body is JSON.** A form-encoded body returns **HTTP 500**, not 401 — this cost us a
+debugging round. Send:
 
-Note the host split: the token is issued by `halykmarket.kz`, while the API gateway is
-`api.halykmarket.com`. `Config` keeps `token_url` and `api_base` separate for this
-reason.
+```json
+{ "grant_type": "client_credentials",
+  "client_id": "HMM_000117600035",
+  "client_secret": "..." }
+```
 
-**[open]** Not yet captured — these need the doc pages, which are currently unreachable
-(see §6):
+Response: `access_token` (JWT, ~128 chars), `token_type: "Bearer"`, `expires_in: 7199`
+(~2 h). Use it as `Authorization: Bearer <token>` on every other call.
 
-- The exact order list response schema and pagination parameters.
-- The full order status vocabulary and the allowed transitions.
-- Order confirmation, transfer-to-delivery, and cancellation endpoints.
-- Pickup-point retrieval (`2.3 Получение точки продаж заказа (для самовывоза)`).
-- Yandex courier OTP retrieval (`3.1.4`).
-- Error codes.
-
-Until those are filled in, `client.request("POST", "/api/merchant/v1/...", json_body=...)`
-and the `raw` CLI subcommand reach any endpoint without code changes.
-
-**[confirmed]** The documentation splits order handling into two modes — обычный режим
-(normal) and режим предзаказа (pre-order) — with separate endpoint trees. We have not yet
-established which mode our shop is on; the endpoints differ, so confirm this before
-writing order-mutation code.
-
-**[confirmed]** After an order reaches «Выполнен», payout happens within 3 business days.
+**[live] The token endpoint rate-limits (HTTP 429).** Requesting a fresh token on every
+call trips it. The client therefore caches the token on disk
+(`~/.cache/halyk_market/token-<hash>.json`, mode 600) and reuses it across CLI runs until
+it expires. `--no-token-cache` disables it; `logout` clears it.
 
 ---
 
-## 4. Usage
+## 4. Reading orders
+
+### 4.1 List — [live] `GET /gw/merchant/public/order/v2`
+
+Query params (all optional): `page`, `size` (≤100), `orderNumber`, `status`,
+`startDate` / `endDate` (`YYYY-MM-DD`). No date range → last 3 months.
+
+Returns a Spring-style page: `content[]`, `numberOfElements`, `hasNext`, `pageable`, …
+Each `content[i]` is a JSON:API `orders` object — `id` (internal), `attributes.code`
+(order number), `status`, `totalPrice`, `deliveryMode`, `deliveryType`, `customer`,
+`addressLetterPath` (waybill URL), `trackNumber`, `cancellationReason`, and a
+`relationships.entries` link to the line items.
+
+**[live] Our shop `HMM_000117600035` currently has 0 orders (all-time).** So end-to-end
+listing is confirmed working, but no real order payload has been observed from our shop.
+
+### 4.2 Order detail — [confirmed] `GET /gw/merchant/public/order/v1?orderNumber=<code>`
+
+Same call backs three doc sections — the **waybill**, the **Yandex courier OTP**, and the
+**courier-service info** are all fields on this one payload.
+
+### 4.3 Line items / basket — [live] `api.halykmarket.com`
+
+- `GET /api/merchant/v1/orders/<id>/relationships/entries` → order lines
+- `GET /api/merchant/v1/orderentries/<entryId>/relationships/product` → the shop product
+- `GET /api/merchant/v1/orderentries/<entryId>/relationships/deliveryPointOfService` → pickup point (self-collection)
+- `GET /api/merchant/v1/pointofservices/<posId>/relationships/city`
+- `POST /gw/merchant/public/merchant/product/details-by-order`, body `{"orderIds":[<int>...]}`
+
+> **[open] — data-scoping caveat.** Calling `.../orders/11111111/relationships/entries`
+> (the docs' placeholder id) with our token returned a **real, populated** order line
+> (entry `12387686`, basePrice 322700) even though our shop has no orders. `11111111` is
+> probably a shared sandbox record, but it may indicate the `api.*` relationship endpoints
+> don't scope strictly to the calling merchant. **Do not enumerate order ids.** Flag to the
+> account manager. We deliberately did not probe further.
+
+---
+
+## 5. Order status flow — [confirmed]
+
+Statuses: `APPROVED_BY_BANK` (new, bank-confirmed) → `ACCEPTED_BY_MERCHANT` (accepted) →
+`WAITING_COURIER` → `COMPLETED`; plus `CANCELLED` / `CANCEL_REQUESTED`.
+
+Every mutation is the **same** call — `POST https://api.halykmarket.com/api/merchant/v1/orders`
+with a JSON:API envelope — differing only by `status`, extra attributes, and headers:
+
+```json
+{ "data": { "type": "orders", "id": "<internal id>",
+            "attributes": { "code": "<order number>", "status": "<STATUS>" } } }
+```
+
+| Action | status | extra | client method |
+|---|---|---|---|
+| Accept new order | `ACCEPTED_BY_MERCHANT` | `countPlace`, `posCode` (HM delivery) | `accept_order()` |
+| Request HM courier | `WAITING_COURIER` | — | `request_courier()` |
+| Send handover OTP to customer | `COMPLETED` | header `X-Security-Code:` *(empty)* + `X-Send-Code: true` | `send_customer_otp()` |
+| Complete (verify OTP) | `COMPLETED` | header `X-Security-Code: <4 digits>` + `X-Send-Code: true` | `complete_order()` |
+| Cancel | `CANCELLED` | `cancellationReason` | `cancel_order()` |
+
+Completion is two steps: `send_customer_otp()` texts a 4-digit code to the buyer, then the
+buyer reads it back and you pass it to `complete_order()`.
+
+**Cancellation — [confirmed]** allowed only in `APPROVED_BY_BANK` or `ACCEPTED_BY_MERCHANT`
+(before handover). `cancellationReason` ∈ `BUYER_CANCELLATION_BY_MERCHANT` (buyer refused),
+`BUYER_NOT_REACHABLE`, `MERCHANT_OUT_OF_STOCK`. After cancelling, list queries for
+`CANCELLED` orders include the `cancellationReason`.
+
+**[open]** Pre-order mode ("режим предзаказа") and the delivery-mode-specific status graphs
+(pickup / PVZ / postamat / sorting-center) are documented as diagrams we haven't captured.
+Our shop's delivery mode isn't established yet — confirm before relying on a specific graph.
+
+---
+
+## 6. Usage
+
+Set credentials as environment variables — best done once at the **environment level**
+(claude.ai/code → environment settings → Environment variables) so every session inherits
+them, since `.env` and the token cache die with each container:
+
+```
+HALYK_CLIENT_ID=HMM_000117600035
+HALYK_CLIENT_SECRET=<from the reset email, no quotes>
+HALYK_ENV=prod
+```
+
+Or locally: `cp .env.example .env` and fill it in.
 
 ```bash
-cp .env.example .env      # then fill in the secret
+python -m halyk_market.cli config                 # masked config, no network
+python -m halyk_market.cli token                  # token (cached, reused)
+python -m halyk_market.cli new --size 20          # orders awaiting acceptance
+python -m halyk_market.cli orders --status COMPLETED --start-date 2026-01-01
+python -m halyk_market.cli order 0008449018-1     # detail: waybill / OTP / courier
+python -m halyk_market.cli entries 12345678       # line items
 
-python -m halyk_market.cli config                      # masked config, no network
-python -m halyk_market.cli token                       # verify credentials
-python -m halyk_market.cli orders --per-page 20
-python -m halyk_market.cli order 1234567
-python -m halyk_market.cli raw GET /api/merchant/v1/orders --param 'page=2'
-python -m halyk_market.cli --env test token             # test2 environment
+# state changes require --yes (they act on real customer orders):
+python -m halyk_market.cli accept 11111111 1111111111-1 --yes
+python -m halyk_market.cli courier 11111111 1111111111-1 --yes
+python -m halyk_market.cli send-otp 11111111 1111111111-1 --yes
+python -m halyk_market.cli complete 11111111 1111111111-1 4007 --yes
+python -m halyk_market.cli cancel 11111111 1111111111-1 MERCHANT_OUT_OF_STOCK --yes
+
+python -m halyk_market.cli raw GET /merchant/public/order/v2 --param size=5 --base gw
 ```
 
-Add `-v` to log every HTTP call.
-
-From Python:
+`-v` logs every HTTP call. From Python:
 
 ```python
-from halyk_market import HalykMarketClient
-
+from halyk_market import HalykMarketClient, OrderStatus
 client = HalykMarketClient()
-orders = client.get_orders(filters={"code": "1234567"})
+page = client.get_new_orders(size=50)
 ```
 
-Requires `requests`.
+Requires `requests`. Offline tests (stub both hosts, no network):
+`python halyk_market/tests_offline.py`.
 
 ---
 
-## 5. Layout
+## 7. Layout
 
 ```
 halyk_market/
-    config.py   credentials, environments, HMM_<БИН> construction, .env loading
-    client.py   token handshake + caching, authenticated request layer, order calls
-    cli.py      command line entry point
-.env.example    documented variables
-.env            real credentials, gitignored
+    config.py         credentials, two-host config, HMM_<BIN>, .env loading
+    client.py         token handshake + on-disk cache, request layer,
+                      all order read/mutate calls, status & reason constants
+    cli.py            command line entry point
+    tests_offline.py  stub-server test suite (17 checks)
+.env.example          documented variables
+.env                  real credentials, gitignored
 ```
 
-The module is Python 3 and standalone — it shares nothing with the Python 2 CIAN code in
-`main.py` / `support/`.
+Python 3, standalone from the Python 2 CIAN code in `main.py` / `support/`.
 
 ---
 
-## 6. Environment note
+## 8. Environment note
 
-`halykmarket.kz`, `api.halykmarket.com`, `test2.halykmarket.com` and
-`halyk-market.gitbook.io` are all refused by the egress policy of the Claude Code web
-sandbox (`403` on CONNECT). So from that sandbox:
-
-- the documentation cannot be read directly — only via search snippets, hence the
-  `[unverified]` tags above;
-- no live call has been made, so nothing in §2–§3 has been exercised end to end.
-
-Run the CLI from the laptop, or allow those hosts in the environment's network policy,
-to verify.
+`halykmarket.kz`, `api.halykmarket.com` and `halyk-market.gitbook.io` are reachable from
+this sandbox **only after** the environment's network access was switched from **Trusted**
+to **Custom** with those domains allowlisted (claude.ai/code → environment → Network access).
+The block was never geographic — no proxy is involved. If a fresh session gets 403s to
+these hosts, that setting was reset.
