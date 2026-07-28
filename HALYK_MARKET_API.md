@@ -381,6 +381,20 @@ uploading square-white anyway (spec + catalogue tiles), but completeness is the 
 — MODERATION, the true validation card. REJECTED/stuck (cabinet-delete to reuse codes): 635083
 col8 (name), 635432 col6 (attrs), 635092 col7 (attrs). Fresh codes left in family: col2, col11, col14.
 
-**Next:** await 636519 verdict. If it passes, the full recipe (name schema + all-14 attrs +
-two-field price + square-white photos) is proven — then batch remaining SKUs and have the cabinet
-clear the 3 stuck drafts so col6/7/8 can be recreated.
+**[critical fix] ENUM attribute values MUST be the numeric `classAttrValueId`, not the name.**
+Names ARE stored but don't register as a valid selection, so required ENUM fields (Тип 10070,
+Материал 10078) read as empty → rejection «заполнить обязательные поля до 100%». col4 (636519,
+all 14 attrs as NAMES) → REJECT; col2 (636546, ENUM as IDs) → testing.
+- ENUM value IDs: Тип Накладка=**36472**, Материал Пластик=**12398**, Совместимость
+  Apple iPhone 17 Pro Max=**1289567** (get others from the form's `classAttrValueId`).
+- STRING attrs keep text values. Код NTIN (287521) rejects the EAN barcode (stores empty) — omit.
+- So a passing attrs list needs: ENUM→id, STRING→text, NUMBER→"50", BOOLEAN→"false", covering
+  the ~13 fillable attrs of cat 20004.
+
+**[live] Cards:** 636546 col2 «…зеленый…» ENUM-as-IDs = current validation card (MODERATION).
+Burned/stuck (cabinet-delete to reuse): 635083 col8, 635432 col6, 635092 col7, 636519 col4.
+Fresh codes left in family: col11, col14.
+
+**Next:** poll 636546 every ~30 min. If it PASSES, the recipe is proven (name schema + all attrs
+with ENUM-as-id + two-field price + square-white photos) → batch remaining SKUs. If it rejects,
+read the new comment and iterate. Then cabinet-clear the 5 stuck drafts to reclaim those colours.
