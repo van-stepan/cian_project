@@ -351,5 +351,15 @@ reject on photos despite correct name/price.
 (cabinet-only to fix), get name + price(two fields) + square-white photos all correct before the
 single POST. 635083 and (probably) 635092 need cabinet deletion.
 
-**Next:** prove the full recipe (name + 15088/6035 price + square white photos) on one clean C7
-SKU; once it passes moderation, batch the rest.
+**[live] Cards so far:**
+- 635083 col8 — REJECT (name), stuck (cabinet-delete).
+- 635092 col7 — 3:4 coloured photos, MODERATION (photo-strictness test; no verdict yet).
+- **635432 col6 «…голубой…» — full correct recipe** (template name + 15088/6035 + 6 white-bg
+  photos padded to 1200×1200 square). MODERATION, progressing. This is the validation card.
+
+Image display: Halyk stores the uploaded master as-is (assetLarge/assetThumbnail point to the
+same file) and only scales for display — it does NOT reshape aspect ratio or add white bg, so
+compliant 1:1 white uploads are required; the "resize" seen in the cabinet is display scaling.
+
+**Next:** wait for 635432's verdict. If it passes, batch the remaining C7 SKUs with this exact
+recipe (fresh sibling per SKU; col7/col8 need cabinet deletion first to reuse their codes).
