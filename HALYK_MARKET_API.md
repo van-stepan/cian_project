@@ -339,4 +339,17 @@ the bad draft in the cabinet then recreate via API.
 **[open] Colour grouping:** the draft has a `draftVariations` field (structure TBD) — likely the
 real lever to join colours into one card with a selector. Investigate before the family batch.
 
-**Next:** confirm 635092 passes moderation, then batch the remaining C7 SKUs with this recipe.
+**[requirement] Photos must be 1:1 square on white.** Halyk photo rules: equal width/height
+(**square 1:1**), min 500×500, max 2000×2000, **white background**, JPEG/JPG ≤2 MB, ≥3 photos.
+WB images are **900×1200 (3:4)** and photos **1–2 are coloured marketing renders**; photos
+**3–8 are on white** (≥6 compliant per card). Pipeline: detect white-bg shots by corner
+sampling (min(corner RGB) > ~238), drop the renders, **pad each to 1200×1200 white square**,
+save JPEG q90. Both first cards used the raw 3:4 renders → non-compliant; 635092 will likely
+reject on photos despite correct name/price.
+
+**[process] Submit each SKU ONCE with the complete recipe.** Because a rejected draft is locked
+(cabinet-only to fix), get name + price(two fields) + square-white photos all correct before the
+single POST. 635083 and (probably) 635092 need cabinet deletion.
+
+**Next:** prove the full recipe (name + 15088/6035 price + square white photos) on one clean C7
+SKU; once it passes moderation, batch the rest.
