@@ -298,5 +298,23 @@ WB the colours are separate `nmID` cards grouped by `imtID`; Halyk's create API 
 card with a single Цвет. Grouping colours into one Halyk card appears catalogue-side. Confirm
 the mechanism with the account manager before promising WB-style variation cards.
 
-Dry-run artifacts for the first card are built and verified (payload + resolved attrs);
-nothing submitted.
+**[live ✅] FIRST CARD SUBMITTED — validated recipe.**
+`c7-iphone-17promax-parent-col8` → Halyk draft **id 635083**, `productDraftStatus: CHECK`
+(submitted 2026-07-28; awaiting moderation, no comment yet). Working end-to-end recipe:
+1. **Upload photos** `POST /gw/merchant/public/file/image/upload/multiple`, multipart field
+   `files=` (JPEG). Response is a list; each item has `id` + `assetUrl`. Build
+   `media=[{"id":<id>,"link":<assetUrl>}]`.
+2. **Submit** `POST /gw/merchant/public/draft/product/moderation` → **HTTP 202**
+   `{"productDraftStatus":"CHECK","id":<draftId>}`.
+   - **attrs accepted as NAMES** (`"Накладка"`,`"Пластик"`,`"Apple iPhone 17 Pro Max"`,`"Синий"`,
+     `"Apple"`,`"MagSafe"`, vendorCode, `"50"`) — the id fallback was not needed.
+   - dimensions sent as **strings** (`"50","9","18","2"`); price int `6035`; stock int.
+   - `info.pointByCity[0]` = city `750000000`/Almaty, point `Bricase KZ_pp1`, amount = stock.
+3. **Poll** `GET /gw/merchant/public/draft/product/<draftId>`.
+
+**Stock decision:** user chose to mirror **«WB остаток» = 20** (not «Доступно» = 3);
+oversell risk acknowledged. Stock file `FBS_STOCK_BRICASE_KZ.xlsx`, sheet `СКЛАД`, key column
+`SKU`, values `Доступно для заказа` / `WB остаток`. All 37 C7 SKUs are present in it.
+
+**Next:** hold the remaining 36 C7 SKUs until draft 635083 clears moderation (avoid mass
+rejection), then batch-create with this same recipe. Colour grouping remains catalogue-side.
