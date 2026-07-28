@@ -316,5 +316,27 @@ the mechanism with the account manager before promising WB-style variation cards
 oversell risk acknowledged. Stock file `FBS_STOCK_BRICASE_KZ.xlsx`, sheet `СКЛАД`, key column
 `SKU`, values `Доступно для заказа` / `WB остаток`. All 37 C7 SKUs are present in it.
 
-**Next:** hold the remaining 36 C7 SKUs until draft 635083 clears moderation (avoid mass
-rejection), then batch-create with this same recipe. Colour grouping remains catalogue-side.
+**[fixed] Name & price corrections (learned from rejections):**
+- **Name** must be `Тип + Модель + отличительные характеристики` incl. material; the first
+  name "Дизайнерский чехол для IPHONE 17 PRO MAX" was REJECTED («Несоответствующее описание»).
+  Working title template: **`Чехол для iPhone 17 Pro Max <color> из пластика с металлической
+  камерой-подставкой и MagSafe`** (`<color>` = WB "Цвет" primary value, e.g. серый).
+- **Price is two fields.** Map WB `price` → Halyk `pointByCity.price` (regular, struck-through)
+  and WB `discountedPrice` → **`pointByCity.salePrice`** (the field first left null). First card
+  wrongly put 6035 alone in `price`. Correct: price=15088, salePrice=6035 (WB club price dropped).
+
+**[limitation] A REJECTED draft cannot be fixed via API.** `/draft/product/{id}` allows only
+GET/DELETE (no PUT/PATCH); DELETE returns «Нельзя удалять товар в модерации» (REJECT counts as
+in-moderation); a fresh POST hits `draft_with_product_code_already_exists`. So editing/deleting a
+rejected draft is **cabinet-only**. Practical path: create a fresh sibling SKU instead, or delete
+the bad draft in the cabinet then recreate via API.
+
+**[live] Cards created:**
+- 635083 `...-col8` — REJECTED (bad name), stuck (cabinet-delete needed).
+- 635092 `...-col7` «Чехол для iPhone 17 Pro Max серый …» — price 15088/6035, stock 20,
+  status MODERATION (progressing). Recipe validated with corrected name + price.
+
+**[open] Colour grouping:** the draft has a `draftVariations` field (structure TBD) — likely the
+real lever to join colours into one card with a selector. Investigate before the family batch.
+
+**Next:** confirm 635092 passes moderation, then batch the remaining C7 SKUs with this recipe.
