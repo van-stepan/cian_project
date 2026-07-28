@@ -361,5 +361,26 @@ Image display: Halyk stores the uploaded master as-is (assetLarge/assetThumbnail
 same file) and only scales for display — it does NOT reshape aspect ratio or add white bg, so
 compliant 1:1 white uploads are required; the "resize" seen in the cabinet is display scaling.
 
-**Next:** wait for 635432's verdict. If it passes, batch the remaining C7 SKUs with this exact
-recipe (fresh sibling per SKU; col7/col8 need cabinet deletion first to reuse their codes).
+**[critical] Fill ALL 14 category characteristics — completeness must be ~100%.** The API marks
+only 3 attrs `required` (Тип 10070, Материал 10078, Модель 51833) but moderation rejects
+«заполнить обязательные поля характеристик до 100%» unless ALL 14 attrs of cat 20004 are filled.
+The 6 easily missed + values used for the case line:
+- 287521 Код NTIN = barcode (EAN from WB skus[0])
+- 35427 Дополнительно = "Защита камеры, дополнительная угловая защита бортов телефона" (valid opt)
+- 10065 Размер = "iPhone 17 Pro Max"
+- 51838 Текстура чехла = "Тканевая"
+- 40097 Товары из Турции = "false" (BOOLEAN)
+- 35425 Защита = "Защита камеры и экрана"
+Also: Особенности 10064 must be a valid option — use **"Поддержка magsafe"**, NOT "MagSafe".
+
+**[finding] Photos were NOT the blocker.** col7 (3:4 coloured photos, 8 attrs) rejected with the
+SAME completeness message as col6 — Halyk did not complain about the 3:4/colour images. Keep
+uploading square-white anyway (spec + catalogue tiles), but completeness is the real gate.
+
+**[live] Cards:** 636519 col4 «…сиреневый…» — **all 14 attrs + square-white photos + 15088/6035**
+— MODERATION, the true validation card. REJECTED/stuck (cabinet-delete to reuse codes): 635083
+col8 (name), 635432 col6 (attrs), 635092 col7 (attrs). Fresh codes left in family: col2, col11, col14.
+
+**Next:** await 636519 verdict. If it passes, the full recipe (name schema + all-14 attrs +
+two-field price + square-white photos) is proven — then batch remaining SKUs and have the cabinet
+clear the 3 stuck drafts so col6/7/8 can be recreated.
