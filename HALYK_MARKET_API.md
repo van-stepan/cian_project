@@ -441,5 +441,15 @@ will NOT group. To enable grouping, set [51833] = the family base (e.g. "c7-ipho
 across colours, keeping merchantProductCode unique. Needs testing on one family OR account-manager
 confirmation; merging can only take effect after approval.
 
-**Next:** monitor moderation of all drafts; decide the grouping approach (test shared-Модель on one
-family vs. account-manager); then batch remaining C5/C6/C10 (and C2 done) once each type passes.
+**[GROUPING TEST live]** Created the full **c10-iphone-17pro** family (5 colours, drafts 637386-390:
+Чёрный/Тёмно-синий/Тёмно-зелёный/Тёмно-бордовый/Сиреневый) all with **shared Модель/Артикул [51833]
+= `c10-iphone-17pro`** (merchantProductCode still unique per colour). Hypothesis: after approval
+these collapse into ONE card with a colour selector. **Verdict pending moderation** — when they
+reach SUCCESS, check the storefront: if one product page with a colour switcher → shared-Модель is
+the grouping key (apply everywhere, re-create earlier families with shared Модель); if 5 separate
+cards → hypothesis wrong, ask account manager.
+
+**Next:** await verdicts on (a) grouping test 637386-390, (b) the 4 type tests (C2 637375, C10
+637376, C5 637383, C6 637384). Then: if grouping works, re-do all families with shared Модель and
+batch remaining C5/C6/C10 with it; else batch as per-colour cards. C5/C6/C10 full batch is HELD
+until a type test of each passes.
