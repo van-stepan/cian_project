@@ -482,22 +482,29 @@ issue.
 - `PUT /product/remaining/save-and-map-sku` needs a **skuId** ("The given id must not be null");
   our own cards are NOT returned by `skus/search` (0 results even by our product code), so we
   can't get their skuId → this endpoint is only for the привязка/map flow, not own cards.
-- **Price-list XML also FAILS for these cards.** `POST api.halykmarket.com/api/merchant/v1/offers/
-  upload` (multipart file) → `{id}`; `GET .../offers/upload/status/<id>`. For sku
-  `c10-iphone-17pro-parent-black` the upload registered as type FULL and returned
-  **success=0, notMapped=0, fail=1** (sku recognized but offer rejected) with **no error message**.
-  Tried isPP=yes/no, no-brand, cityprices vs price, offer-level vs stock-level stockLevel — ALL
-  fail=1. Conclusion: the price-list (offer) system does NOT manage cards created via the
-  moderation/без-прайс-листа path; the two are separate.
-- **So every reachable API path to set price/stock on API-created cards fails:** moderation payload
-  doesn't propagate · save-and-map-sku needs a skuId our own cards don't expose (skus/search
-  returns 0 for them) · price-list rejects them. **Only confirmed method = cabinet manual**
-  (Управление предложениями → Цена/Склад → Сохранить, per card).
-- **ACTION: ask Halyk Qoldau** — "how to set price/stock programmatically on cards created via the
-  merchant draft/moderation API? price-list upload returns fail=1 for these SKUs; skus/search
-  doesn't return our own skuId for save-and-map-sku." This is a documented-API gap.
-- User's ongoing plan: FBS stock file on Yandex.Disk updated per order → feed whatever price/stock
-  API Qoldau confirms.
+- **✅ SOLVED — price-list XML sets price/stock; the bug was `loanPeriod=0`.** `POST
+  api.halykmarket.com/api/merchant/v1/offers/upload` (multipart `file`) → `{id}`; poll
+  `GET .../offers/upload/status/<id>` for `status` + success/notMapped/fail counts.
+  **WORKING offer XML** (`success=1` for `c10-iphone-17pro-parent-black`):
+  ```xml
+  <merchant_offers date="YYYY-MM-DD" xmlns="halyk_market">
+    <company>Bricase KZ</company><merchantid>000117600035</merchantid>
+    <offers><offer sku="<vendorCode>">
+      <model><exact card name></model><brand>No Name</brand>
+      <barcodes><barcode><ean></barcode></barcodes>
+      <stocks><stock available="yes" storeId="Bricase KZ_pp1" isPP="yes" stockLevel="<qty>"/></stocks>
+      <price><regular price></price>
+      <loanPeriod>3</loanPeriod>   <!-- MUST be a real term (3/6/12/24); 0 => fail=1 -->
+    </offer></offers></merchant_offers>
+  ```
+  - `loanPeriod` MUST be ≥3 (installment term); **0 causes fail=1** (this was the whole blocker).
+  - `storeId="Bricase KZ_pp1"` WITH the space is correct (underscore fails). `isPP="yes"` (it's a
+    pickup point). `deliveryOptions` NOT needed (a bad one gives HTTP 400 on upload).
+  - `<price>` = REGULAR price. Sale price (акционная) is a SEPARATE step (Добавление акционной цены).
+  - Upload type is FULL (`isIncremental:false`) → the file should contain ALL offers, else offers
+    not listed may deactivate. Build one file with every SKU.
+- User's ongoing plan: FBS stock file on Yandex.Disk updated per order → build that file → price-list
+  XML (this format) → upload. That's the stock sync.
 
 **[ops] Stock must be refreshed ≥ every 90 days** or the card auto-archives. Halyk does not manage
 prices/stocks — the seller keeps them current (our WB-остаток sync will need to run periodically).
