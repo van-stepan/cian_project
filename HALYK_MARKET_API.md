@@ -455,6 +455,12 @@ update/PUT endpoint; the merchant API only creates. Re-POSTing a merchantProduct
 already_exists. So to change Модель on existing cards: either **recreate via API** (delete+create)
 or **file a Qoldau support request**. For ~90 cards, recreate is the faster self-service path.
 
+**[verified] Delete/recreate cycle:** cabinet-deleted rejected drafts return 404 (truly gone) and
+the API recreates them with the SAME merchantProductCode (proven: col4/6/7/8 old 635083/635432/
+635092/636519 → 404, new 637378/380/381/382 live). **But the API cannot delete an APPROVED card** —
+DELETE /draft/product/<id> on the live col2 (636546, SUCCESS) returned 404 and the card stayed live.
+So deleting an approved card is **cabinet-only**; the API can then recreate once the code is freed.
+
 **[ops] Stock must be refreshed ≥ every 90 days** or the card auto-archives. Halyk does not manage
 prices/stocks — the seller keeps them current (our WB-остаток sync will need to run periodically).
 
