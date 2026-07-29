@@ -449,7 +449,16 @@ reach SUCCESS, check the storefront: if one product page with a colour switcher 
 the grouping key (apply everywhere, re-create earlier families with shared Модель); if 5 separate
 cards → hypothesis wrong, ask account manager.
 
+**[limitation] No card-EDIT API.** Per "Просмотр и изменение карточек": editing a card's fields
+(incl. Модель/Артикул) is a **manual request to Halyk Qoldau partner support** — there is no
+update/PUT endpoint; the merchant API only creates. Re-POSTing a merchantProductCode = 400
+already_exists. So to change Модель on existing cards: either **recreate via API** (delete+create)
+or **file a Qoldau support request**. For ~90 cards, recreate is the faster self-service path.
+
+**[ops] Stock must be refreshed ≥ every 90 days** or the card auto-archives. Halyk does not manage
+prices/stocks — the seller keeps them current (our WB-остаток sync will need to run periodically).
+
 **Next:** await verdicts on (a) grouping test 637386-390, (b) the 4 type tests (C2 637375, C10
-637376, C5 637383, C6 637384). Then: if grouping works, re-do all families with shared Модель and
-batch remaining C5/C6/C10 with it; else batch as per-colour cards. C5/C6/C10 full batch is HELD
-until a type test of each passes.
+637376, C5 637383, C6 637384). Then: if grouping works, re-create families with shared Модель (no
+edit API) and batch remaining C5/C6/C10 with it; else batch as per-colour cards. C5/C6/C10 full
+batch HELD until a type test of each passes.
