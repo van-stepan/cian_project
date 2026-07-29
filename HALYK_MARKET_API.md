@@ -475,6 +475,20 @@ the API recreates them with the SAME merchantProductCode (proven: col4/6/7/8 old
 DELETE /draft/product/<id> on the live col2 (636546, SUCCESS) returned 404 and the card stayed live.
 So deleting an approved card is **cabinet-only**; the API can then recreate once the code is freed.
 
+**[BLOCKER - price/stock not set] Cards approve with content but 0 price/stock.** The moderation
+payload's `info.pointByCity` price/stock does NOT propagate to the live offer; price/stock is a
+SEPARATE post-approval step. Warehouse `Bricase KZ_pp1` (Алматы, active) is CORRECT — not the
+issue.
+- `PUT /product/remaining/save-and-map-sku` needs a **skuId** ("The given id must not be null");
+  our own cards are NOT returned by `skus/search` (0 results even by our product code), so we
+  can't get their skuId → this endpoint is only for the привязка/map flow, not own cards.
+- **Fix path = price-list XML** (`Загрузка товаров прайс-листом`): `<offer sku="<vendorCode>">`
+  with `<price>`, `<stocks><stock storeId="Bricase KZ_pp1">`, `<cityprices>` — sets price/stock/
+  availability by SKU code, no skuId. Standard bulk mechanism. TO BUILD + verify it updates
+  existing approved offers.
+- User's ongoing plan: a script updates the FBS stock file on Yandex.Disk on each Halyk order;
+  that file → price-list XML → Halyk is the sync to build.
+
 **[ops] Stock must be refreshed ≥ every 90 days** or the card auto-archives. Halyk does not manage
 prices/stocks — the seller keeps them current (our WB-остаток sync will need to run periodically).
 
