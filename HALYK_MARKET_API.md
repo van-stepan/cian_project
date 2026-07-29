@@ -572,3 +572,18 @@ and, on recovery, runs `creminder`+`tests` then pushes the price-list; writes `O
 tests, and pushes price/stock for the ~46 existing offers. (2) When soft-touch & book tests reach
 SUCCESS, run `batch_all.py softtouch` (64) and `batch_all.py book` (22). (3) Rebuild price_all.xml to
 cover EVERY created SKU (full upload) and re-push.
+
+**[✅ EXECUTED — infra recovered ~17:25Z]**
+- **Price/stock upload: total=46 success=46 fail=0** — the 46 existing cards now have price+stock
+  (WB discountedPrice, WB-остаток qty, loanPeriod=3). They should flip to В продаже / un-archive.
+- **C10/C5/C6/C2 remainders created: 23/23** → drafts **638598–638623** (all MODERATION).
+- **New-type test cards created (MODERATION):** soft-touch+compat `638619` (Samsung S23),
+  soft-touch NO-compat `638620` (Google Pixel 7 — the completeness probe), book-leather `638623`
+  (Samsung A54). Transient 503/504 photo-upload hiccups on 3 SKUs were retried → all OK.
+- **`scratchpad/finalize.py` (bg)** polls those 3 test drafts every 180s (≤4h); on verdicts it
+  auto-runs `book`(22) if book=SUCCESS and `softtouch`(64) if soft-touch tests pass — using the
+  **Универсальный** compat fallback (env `SOFTTOUCH_UNIVERSAL=1`) IF the no-compat probe (638620)
+  REJECTS but the with-compat one (638619) passes — then rebuilds the full 155-offer price-list and
+  re-pushes. Verdicts + counts land in `FINAL_STATUS.json`.
+- Model-name casing cleaned (connectors и/с/для lowercased; FE/SE/5G kept upper; Pro/Max/Ultra
+  Title-cased) in both `batch_all.py` and `build_price.py`.
