@@ -513,3 +513,62 @@ prices/stocks — the seller keeps them current (our WB-остаток sync will
 637376, C5 637383, C6 637384). Then: if grouping works, re-create families with shared Модель (no
 edit API) and batch remaining C5/C6/C10 with it; else batch as per-colour cards. C5/C6/C10 full
 batch HELD until a type test of each passes.
+
+---
+
+## 2026-07-29 — full-catalogue expansion + Halyk infra outage
+
+**[✅ ALL type tests SUCCESS]** GET `/gw/merchant/public/draft/product/<id>` returns
+`{productDraftResponse:{…,status}, comment}` — status lives at `productDraftResponse.status`
+(NOT `productDraftStatus`), `comment` holds the rejection reason. Confirmed SUCCESS:
+C2 637375, C5 637383, C6 637384, C10 637376, C7 col2 636546, grouping 637386. So the whole
+C-series recipe (base + per-type Материал/Особенности table above) is fully validated.
+
+**[catalogue taxonomy]** WB has **155** cards. By vendorCode prefix / case type:
+- `c7` 37, `c10` 21, `c6` 6, `c5` 4, `c2` 1  — C-series (recipe validated).
+- `b1`/`b2`/`b3`/`b5` = **22** → all *«Чехол-книжка из кожи»* = **book-leather** (new type).
+- phone-brand-named (`google/honor/huawei/oneplus/realme/samsung/tecno/xiaomi/redminote…`) = **64**
+  → all *«Мягкий Soft Touch чехол»* = **soft-touch** (new type). One case type, many models.
+
+**[new-type recipes — same base, differ by title + Тип[10070] + Материал[10078] + Особенности[10064]]**
+- **soft-touch**: Тип Накладка(36472) · Материал Силикон(12795) · Особенности «Покрытие soft-touch» ·
+  текстура(51838) «Силиконовая» · title «Чехол Soft Touch для <m> <c> из силикона с защитой камеры».
+- **book-leather**: Тип «Чехол книжка»(13288) · Материал Экокожа(13343) · Особенности «Отделение для
+  банковских карт» · текстура «Кожаная» · title «Чехол-книжка для <m> <c> из экокожи с отделением для карт и подставкой».
+- More ENUM ids (from the form): Тип «Чехол с подставкой»=667931 (used for C5/C2), «Чехол книжка»=13288,
+  Чехол-накладка=13287; Материал Силикон=12795, Экокожа=13343, Кожа=15971, Искусственная кожа=11610.
+- Особенности[10064] valid option NAMES: «Покрытие soft-touch», «Отделение для банковских карт»,
+  «Кольцо-держатель», «Поддержка беспроводной зарядки», «Поддержка magsafe» (pass NAME, not id — only
+  Тип/Материал/Совместимость need numeric ids).
+
+**[compat catalogue GAP — key constraint]** Совместимость[10081] has **231** options and is
+`required=False`. Many WB models are **absent** from it: NO Google Pixel, NO OnePlus, NO Tecno Camon 40,
+NO Xiaomi 17/12 Pro/11T Pro, NO Realme 11/14/15, NO Samsung S21(plain)/M31. Coverage of remaining work:
+soft-touch **47 of 64** miss compat, book **5 of 22** miss compat. General resolver = normalise WB
+Совместимость values and match the catalogue (first hit); else iPhone/Samsung constructor from
+vendorCode; else **omit 10081** (it's optional). OPEN: does omitting compat drop completeness below the
+~100% moderation gate? → test card `google-pixel7-parent-black` (no compat) will answer empirically. If
+it rejects, fallback = compat «Универсальный» (last catalogue option) to keep the field filled.
+
+**[colour alias]** 6 "fuchsia" cards have WB Цвет `['ярко-розовый','фуксия','розовый неон']`, none in
+Halyk's 64 colours → alias to **Малиновый**. Resolver: exact match first, then COLOR_ALIAS fallback.
+
+**[⚠️ HALYK INFRA OUTAGE 2026-07-29 ~17:00Z — transient, NOT our bug]** Two Halyk upload backends
+down simultaneously:
+- **Photo upload** `POST /gw/merchant/public/file/image/upload/multiple` → **HTTP 409** `"minio-s3.halykmarket.com:
+  Temporary failure in name resolution"` (their object store's DNS is broken).
+- **Price/stock** `POST api.halykmarket.com/api/merchant/v1/offers/upload` → **HTTP 500**
+  `org.springframework.security.authentication…` (their token-introspection backend flapping).
+- Token, moderation submit, and all GET/read endpoints are UP; our token verifies (gw GET 200). Both
+  failures are server-side. Card creation NEEDS photos → fully blocked until minio recovers.
+
+**[tooling]** `scratchpad/batch_all.py <mode>` — one idempotent creator for every case type (modes:
+`creminder` = C10/C5/C6/C2 remainders, `tests` = 3 new-type probes, `softtouch`, `book`, or a single
+sku). General compat/colour/model/maker resolvers; white-bg square photos (≥3, fallback to any);
+`already_exists`→ALREADY. `scratchpad/orchestrate.py` (bg task) polls minio+offers every 60s for ~90 min
+and, on recovery, runs `creminder`+`tests` then pushes the price-list; writes `ORCH_STATUS.json`.
+
+**Next once infra recovers:** (1) orchestrate.py creates C10/C5/C6/C2 remainders (~23) + 3 new-type
+tests, and pushes price/stock for the ~46 existing offers. (2) When soft-touch & book tests reach
+SUCCESS, run `batch_all.py softtouch` (64) and `batch_all.py book` (22). (3) Rebuild price_all.xml to
+cover EVERY created SKU (full upload) and re-push.
