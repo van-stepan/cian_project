@@ -441,6 +441,13 @@ will NOT group. To enable grouping, set [51833] = the family base (e.g. "c7-ipho
 across colours, keeping merchantProductCode unique. Needs testing on one family OR account-manager
 confirmation; merging can only take effect after approval.
 
+**[✅ C10 recipe validated]** C10 type test 637376 → SUCCESS. All 5 grouping-test cards
+637386-390 → SUCCESS. Note: moderation **remaps brand 33006 → 10721 (No Name)** on approval.
+**[grouping verdict pending manual storefront check]** — merchant API exposes no live-product URL,
+no grouping field (draftVariations stays null post-approval), and the storefront product API is
+auth-locked; so grouping can only be confirmed by looking at halykmarket.kz. Ask user: do the 5
+c10-iphone-17pro colours show as ONE colour-selector card or 5 separate cards?
+
 **[GROUPING TEST live]** Created the full **c10-iphone-17pro** family (5 colours, drafts 637386-390:
 Чёрный/Тёмно-синий/Тёмно-зелёный/Тёмно-бордовый/Сиреневый) all with **shared Модель/Артикул [51833]
 = `c10-iphone-17pro`** (merchantProductCode still unique per colour). Hypothesis: after approval
