@@ -441,6 +441,13 @@ will NOT group. To enable grouping, set [51833] = the family base (e.g. "c7-ipho
 across colours, keeping merchantProductCode unique. Needs testing on one family OR account-manager
 confirmation; merging can only take effect after approval.
 
+**[❌ GROUPING VERDICT: shared-Модель does NOT group]** User confirmed in Товары: the 5
+`c10-iphone-17pro` colours (all sharing «Модель/Артикул» = `c10-iphone-17pro`) appear as **5
+separate, unconnected entries**. So sharing the Модель field does NOT merge colours. Merging
+colours into one colour-selector card is **not merchant-API-controllable** — no create-API field
+does it. Options: **account-manager / Qoldau request**, or price-list XML parent (unverified).
+Keep per-colour cards; do NOT recreate families for grouping.
+
 **[✅ C10 recipe validated]** C10 type test 637376 → SUCCESS. All 5 grouping-test cards
 637386-390 → SUCCESS. Note: moderation **remaps brand 33006 → 10721 (No Name)** on approval.
 **[grouping verdict pending manual storefront check]** — merchant API exposes no live-product URL,
