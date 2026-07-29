@@ -414,5 +414,32 @@ colour/price/stock/photos; validates before POST).
 **[open] cosmetics:** Samsung "FE" titles render as "…S24 Fe" (a `.title()` lowercasing) — compat
 attr ID is correct; only the title text is slightly off. Fix on any re-run.
 
-**Next:** monitor moderation of the 32 new drafts; cabinet-delete the 4 stuck iphone-17promax
-colours so they can be recreated; revisit `draftVariations` if colour-selector grouping is wanted.
+**[live] C7 iphone-17promax family fully resubmitted:** col4/6/7/8 recreated after cabinet
+delete (637378/380/381/382), joining col2(SUCCESS)/col11(637264)/col14(637265).
+
+**[recipe per case type]** Same base recipe, differing by title + Материал(ENUM id) + Особенности:
+- **C7**: «Чехол для <m> <c> из пластика с металлической камерой-подставкой и MagSafe» · Пластик(12398) · Поддержка magsafe
+- **C10**: «Дизайнерский чехол для <m> <c> из пластика с MagSafe и защитой камеры» · Пластик(12398) · Поддержка magsafe
+- **C6**: «Мягкий тканевый чехол для <m> <c> с soft-touch покрытием и защитой камеры» · Ткань(13035) · Покрытие soft-touch
+- **C5**: «Кожаный чехол для <m> <c> с кольцом-подставкой и поддержкой беспроводной зарядки» · Искусственная кожа(11610) · Поддержка беспроводной зарядки
+- **C2**: «Чехол с кольцом-подставкой для <m> <c> из пластика с защитой камеры» · Пластик(12398) · Кольцо-держатель
+Материал ids: пластик 12398, искусственная кожа 11610, ткань 13035, экокожа 13343, силикон 12795.
+Type test cards: C2 637375, C10 637376, C5 637383, C6 637384 (all MODERATION).
+
+**[fix] Photos:** prefer white-bg squared, but if <3 white (e.g. C5 leather has only 2), fall back
+to padding other photos to square to reach ≥3. Halyk is lenient on photos (col7 with 3:4 coloured
+shots rejected on characteristics, not photos), so count matters more than pure white.
+
+**[compat resolver]** match WB Совместимость char values against Halyk options first; fallback to a
+name constructed from the vendorCode model (iphone-17pro → "apple iphone 17 pro").
+
+**[MERGE / colour grouping — hypothesis, unverified]** No explicit merge API; docs silent;
+approved col2 has `draftVariations: null`. Best hypothesis: **Модель/Артикул производителя [51833]
+is the grouping key** — cards sharing the same value group into one card with a colour selector,
+Цвет as the variant axis. Our cards currently set [51833] = the UNIQUE full vendorCode, so they
+will NOT group. To enable grouping, set [51833] = the family base (e.g. "c7-iphone-17promax") shared
+across colours, keeping merchantProductCode unique. Needs testing on one family OR account-manager
+confirmation; merging can only take effect after approval.
+
+**Next:** monitor moderation of all drafts; decide the grouping approach (test shared-Модель on one
+family vs. account-manager); then batch remaining C5/C6/C10 (and C2 done) once each type passes.
