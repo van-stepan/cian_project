@@ -482,12 +482,22 @@ issue.
 - `PUT /product/remaining/save-and-map-sku` needs a **skuId** ("The given id must not be null");
   our own cards are NOT returned by `skus/search` (0 results even by our product code), so we
   can't get their skuId → this endpoint is only for the привязка/map flow, not own cards.
-- **Fix path = price-list XML** (`Загрузка товаров прайс-листом`): `<offer sku="<vendorCode>">`
-  with `<price>`, `<stocks><stock storeId="Bricase KZ_pp1">`, `<cityprices>` — sets price/stock/
-  availability by SKU code, no skuId. Standard bulk mechanism. TO BUILD + verify it updates
-  existing approved offers.
-- User's ongoing plan: a script updates the FBS stock file on Yandex.Disk on each Halyk order;
-  that file → price-list XML → Halyk is the sync to build.
+- **Price-list XML also FAILS for these cards.** `POST api.halykmarket.com/api/merchant/v1/offers/
+  upload` (multipart file) → `{id}`; `GET .../offers/upload/status/<id>`. For sku
+  `c10-iphone-17pro-parent-black` the upload registered as type FULL and returned
+  **success=0, notMapped=0, fail=1** (sku recognized but offer rejected) with **no error message**.
+  Tried isPP=yes/no, no-brand, cityprices vs price, offer-level vs stock-level stockLevel — ALL
+  fail=1. Conclusion: the price-list (offer) system does NOT manage cards created via the
+  moderation/без-прайс-листа path; the two are separate.
+- **So every reachable API path to set price/stock on API-created cards fails:** moderation payload
+  doesn't propagate · save-and-map-sku needs a skuId our own cards don't expose (skus/search
+  returns 0 for them) · price-list rejects them. **Only confirmed method = cabinet manual**
+  (Управление предложениями → Цена/Склад → Сохранить, per card).
+- **ACTION: ask Halyk Qoldau** — "how to set price/stock programmatically on cards created via the
+  merchant draft/moderation API? price-list upload returns fail=1 for these SKUs; skus/search
+  doesn't return our own skuId for save-and-map-sku." This is a documented-API gap.
+- User's ongoing plan: FBS stock file on Yandex.Disk updated per order → feed whatever price/stock
+  API Qoldau confirms.
 
 **[ops] Stock must be refreshed ≥ every 90 days** or the card auto-archives. Halyk does not manage
 prices/stocks — the seller keeps them current (our WB-остаток sync will need to run periodically).
