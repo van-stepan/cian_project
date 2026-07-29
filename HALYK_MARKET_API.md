@@ -395,6 +395,24 @@ all 14 attrs as NAMES) → REJECT; col2 (636546, ENUM as IDs) → testing.
 Burned/stuck (cabinet-delete to reuse): 635083 col8, 635432 col6, 635092 col7, 636519 col4.
 Fresh codes left in family: col11, col14.
 
-**Next:** poll 636546 every ~30 min. If it PASSES, the recipe is proven (name schema + all attrs
-with ENUM-as-id + two-field price + square-white photos) → batch remaining SKUs. If it rejects,
-read the new comment and iterate. Then cabinet-clear the 5 stuck drafts to reclaim those colours.
+**[✅ RECIPE PROVEN] 636546 col2 passed moderation → status SUCCESS (live).** The full validated
+recipe: name template `Чехол для <model> <color> из пластика с металлической камерой-подставкой и
+MagSafe`; brand 33006; ALL 13 fillable attrs with **ENUM values as option IDs** (Тип 36472,
+Материал 12398, Совместимость <per-model id>), STRING as text, Цвет as name, Вес "50", BOOLEAN
+"false"; two-field price (price + salePrice); ≥3 white-bg photos padded to 1200×1200 square.
+
+**[✅ FULL C7 BATCH SUBMITTED]** All 37 C7 SKUs handled. Batch script: `batch_rest.py` (derives
+compat option ID from the vendorCode model, not the messy WB Совместимость char; auto-resolves
+colour/price/stock/photos; validates before POST).
+- **col2 iphone-17promax = SUCCESS (live).**
+- **32 fresh SKUs submitted → MODERATION** (drafts 637264-637301): iphone-17promax col11/14;
+  iphone 14/15/16 promax; iphone 17; iphone 17pro (7 colours); samsung s23/s23fe/s23ultra/s24/
+  s24fe/s24ultra/s25/s25ultra families.
+- **4 stuck (need cabinet delete):** iphone-17promax col4 (636519), col6 (635432), col7 (635092),
+  col8 (635083) — rejected during the recipe-discovery iterations; API can't delete/edit them.
+
+**[open] cosmetics:** Samsung "FE" titles render as "…S24 Fe" (a `.title()` lowercasing) — compat
+attr ID is correct; only the title text is slightly off. Fix on any re-run.
+
+**Next:** monitor moderation of the 32 new drafts; cabinet-delete the 4 stuck iphone-17promax
+colours so they can be recreated; revisit `draftVariations` if colour-selector grouping is wanted.
