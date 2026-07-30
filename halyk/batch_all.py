@@ -164,7 +164,11 @@ def submit(sku):
     up=requests.post("https://halykmarket.kz/gw/merchant/public/file/image/upload/multiple",headers=H(False),files=files,timeout=120)
     try: media=[{"id":m["id"],"link":m["assetUrl"]} for m in up.json()]
     except: return "FAIL upload %s %s"%(up.status_code,up.text[:60])
-    title=rc["title"]%(tm,color.lower())
+    if typ=="book":
+        slots="3 отделениями" if sku.split("-")[0] in ("b1","b2","b5") else "несколькими отделениями"
+        title="Чехол-книжка для %s %s из экокожи с %s для карт и подставкой"%(tm,color.lower(),slots)
+    else:
+        title=rc["title"]%(tm,color.lower())
     attrs=[{"id":10070,"value":rc["ctype"]},{"id":10078,"value":rc["mat"]},
         {"id":51833,"value":sku},{"id":10068,"value":color},{"id":10067,"value":"50"},
         {"id":10066,"value":maker},{"id":10064,"value":rc["feat"]},

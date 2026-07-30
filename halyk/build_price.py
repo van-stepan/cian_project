@@ -80,7 +80,12 @@ for sku in sorted(cards):
     c=cards[sku]; typ=type_of(sku); m=model_disp(sku,c); col=color_of(c); g=prices.get(c["nmID"])
     if not (m and col and g): skipped+=1; continue
     price=int(round(g["sizes"][0]["discountedPrice"])); qty=stock.get(sku,[0]*13)[12]
-    title=html.escape(TITLE[typ]%(m,col.lower())); bc=c["sizes"][0]["skus"][0]
+    if typ=="book":
+        slots="3 отделениями" if sku.split("-")[0] in ("b1","b2","b5") else "несколькими отделениями"
+        raw="Чехол-книжка для %s %s из экокожи с %s для карт и подставкой"%(m,col.lower(),slots)
+    else:
+        raw=TITLE[typ]%(m,col.lower())
+    title=html.escape(raw); bc=c["sizes"][0]["skus"][0]
     offers.append('<offer sku="%s"><model>%s</model><brand>No Name</brand><barcodes><barcode>%s</barcode></barcodes><stocks><stock available="yes" storeId="Bricase KZ_pp1" isPP="yes" stockLevel="%d"/></stocks><price>%d</price><loanPeriod>3</loanPeriod></offer>'%(sku,title,bc,qty,price))
 xml='<?xml version="1.0" encoding="utf-8"?>\n<merchant_offers date="2026-07-29" xmlns="halyk_market" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n<company>Bricase KZ</company>\n<merchantid>000117600035</merchantid>\n<offers>'+"".join(offers)+'</offers>\n</merchant_offers>'
 open(SP+"/price_all.xml","w",encoding="utf-8").write(xml)

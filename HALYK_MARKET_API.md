@@ -661,3 +661,16 @@ token cannot do it. **2026-07-30 12:37: user uploaded `merge_filled.xlsx` in the
 Частично: 0, Пропущено: 0, В ошибке: 0».** All 37 colour families merged cleanly into single
 colour-selector products. Storefront is now 82 products (45 single + 37 merged). Colour grouping is
 DONE — repeat this flow (build_merge.py → cabinet upload) whenever new colours are added.
+
+**[✅ the "2 fails" identified & fixed] Duplicate product name in the price-list.** The 2 rejected
+offers were `b2-realme-11proplus-parent-black` and `b3-realme-11proplus-parent-black` — reason
+«Название товара дублируется в данном файле». Root cause: **b2 vs b3 are different book cases** (WB
+desc: b1/b2/b5 = «**три** кармашка-кардхолдера» = 3 card slots; b3 = «**несколько** кармашков» =
+multiple), but the flat `book` recipe gave both the same title for the same phone+colour. Fix: book
+title now encodes slot count — b1/b2/b5 → «с 3 отделениями для карт и подставкой», b3 → «с
+несколькими отделениями для карт и подставкой» (in both `build_price.py` and `batch_all.py`). Re-push
+→ **status=COMPLETED total=155 success=155 notMapped=0 fail=0.** Price-list `<model>` now unique per
+SKU. NOTE: the 2 live CARD names (set at moderation) are still the old identical text; to make the
+storefront card titles distinct too, delete those 2 in the cabinet and recreate via
+`batch_all.py <sku>` (no edit API). General rule: **product names must be unique across the whole
+price-list file** — differentiate any same-phone/same-colour cards that share a case type.
