@@ -623,3 +623,41 @@ periodically). **No API endpoint exposes per-offer errors** (tried /upload/{id},
 
 **[ops] Routine `trig_01EKdHiGvHuyk5SE2wyQ3vV1`** repurposed to a periodic price re-sync: rebuild +
 re-push `price_all.xml` so newly-approved cards flip to В продаже; self-deletes once notMapped→~0.
+(Deleted 2026-07-30 after re-sync reached success=153 / notMapped=0.)
+
+**[stock] «Нет в наличии» = WB остаток 0, NOT an error.** Cabinet Товары split (98 В продаже /
+57 Нет в наличии) matches our data: **58 of 155 SKUs have WB-остаток 0**. Those show as out-of-stock
+(correct); they flip to В продаже automatically when WB restocks and the price-list is re-pushed. The
+earlier "fail=2" in the offer upload is negligible/rounding, not a findable cabinet error.
+
+---
+
+## 2026-07-30 — ✅ COLOUR GROUPING SOLVED via cabinet «Соединение вариаций товаров»
+
+**Supersedes the earlier "grouping not API-controllable / account-manager only" verdict.** The
+Halyk **Partners cabinet** has *Товары → Добавление товара → Объединение товаров → Вариации товара →
+Соединить* ("Соединение вариаций товаров") — an **Excel/XML template upload** that merges cards into
+ONE storefront product with a colour selector.
+
+**Template** («Скачать шаблон» for category Чехлы для смартфонов) has 2 sheets:
+- `Товары для объединения`: columns **`sku` | `name` | `Код вариации` | `Цвет`**. Cards sharing the
+  same **Код вариации** merge into one product; **Цвет** (from the allowed list) is the selector axis.
+- `значения`: **41 allowed Цвет values** — DIFFERENT vocab from the card-creation Цвет(64): here it's
+  Бежевый…Фуксия…Мультиколор…Черный (has Фуксия & Мультиколор; NO Малиновый/Графитовый/Золотой →
+  map Малиновый→Фуксия, Графитовый→Темно-серый, Золотой→Золотистый, Темно-бордовый→Бордовый, etc.).
+
+**[builder] `halyk/build_merge.py`** groups our 155 cards by family (`sku` minus `-parent-<colour>`),
+keeps only multi-colour families (**37 families / 110 cards**), sets Код вариации = family slug, maps
+each card's colour to the 41-value merge vocab (0 within-family collisions), names via the same
+creation TITLE templates → writes `merge_filled.xlsx`. 45 single-colour models stay standalone →
+storefront goes **155 cards → 82 products**.
+
+**[⚠️ merge is CABINET-ONLY — no API]** POSTing the file to every plausible merchant-API path
+(`gw/merchant/public/product/variation/upload`, …) returns Spring **"No static resource"** / 404 —
+the feature is NOT in the merchant-API namespace; it lives behind the **cabinet's own login**
+(separate auth from our client_credentials; bank-grade, SMS/OTP). So the merge file must be uploaded
+**manually in the cabinet** (or via a browser driven with the user's cabinet session cookie). Our API
+token cannot do it. **2026-07-30 12:37: user uploaded `merge_filled.xlsx` in the cabinet → ✅ «Завершено. Успешно: 37,
+Частично: 0, Пропущено: 0, В ошибке: 0».** All 37 colour families merged cleanly into single
+colour-selector products. Storefront is now 82 products (45 single + 37 merged). Colour grouping is
+DONE — repeat this flow (build_merge.py → cabinet upload) whenever new colours are added.
