@@ -33,22 +33,35 @@ stock=json.load(open(SP+"/stock.json"))
 
 # ---- resolvers ----
 def norm(s): return re.sub(r'\s+',' ',s.strip().lower()).replace('ё','е')
+CANON_ID={norm(k):v for k,v in compat_opts.items()}      # normalized catalogue name -> id
+CANON_NM={norm(k):k for k in compat_opts}                # normalized -> pretty name
+def variants(s):
+    """Safe normalized candidates for one WB compat string: same physical phone only."""
+    n=norm(s); outs=[n]
+    n2=re.sub(r'\s*\b[45]g\b','',n).strip()              # drop network band (4G/5G) — same body
+    if n2!=n: outs.append(n2)
+    for base in list(outs):
+        if base.startswith("redmi") or base.startswith("poco"):
+            outs.append("xiaomi "+base)                   # catalogue prefixes Redmi/Poco with Xiaomi
+    return outs
 def compat_of(sku,c):
-    # 1) match WB Совместимость values against Halyk catalogue
     wb=next((ch["value"] for ch in c["characteristics"] if ch["name"]=="Совместимость"),[])
+    # 1) exact match on any WB value
     for v in wb:
-        vid=compat_lc.get(norm(v))
-        if vid: return vid, [k for k in compat_opts if k.lower()==norm(v)][0]
-    # 2) iphone/samsung constructor from sku
+        if norm(v) in CANON_ID: return CANON_ID[norm(v)], CANON_NM[norm(v)]
+    # 2) safe relaxed match (network band / Redmi-Poco prefix)
+    for v in wb:
+        for cand in variants(v):
+            if cand in CANON_ID: return CANON_ID[cand], CANON_NM[cand]
+    # 3) iphone constructor from sku
     seg=sku.split("-")
-    if seg[0]=="c7" or seg[0] in ("c10","c5","c6","c2"): seg=seg[1:]  # drop type prefix
+    if seg[0] in ("c7","c10","c5","c6","c2"): seg=seg[1:]  # drop type prefix
     brand=seg[0]; model=seg[1] if len(seg)>1 else ""
     cand=None
     if brand=="iphone":
         m=re.match(r'(\d+)(pro)?(max)?',model)
         if m: cand="apple iphone "+m.group(1)+(" pro" if m.group(2) else "")+(" max" if m.group(3) else "")
-    vid=compat_lc.get(cand) if cand else None
-    if vid: return vid, cand
+    if cand and norm(cand) in CANON_ID: return CANON_ID[norm(cand)], CANON_NM[norm(cand)]
     # optional fallback: mark as Универсальный so the required-completeness gate stays satisfied
     if os.environ.get("SOFTTOUCH_UNIVERSAL")=="1" and "универсальный" in compat_lc:
         return compat_lc["универсальный"], "Универсальный"

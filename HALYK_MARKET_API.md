@@ -587,3 +587,39 @@ cover EVERY created SKU (full upload) and re-push.
   re-pushes. Verdicts + counts land in `FINAL_STATUS.json`.
 - Model-name casing cleaned (connectors и/с/для lowercased; FE/SE/5G kept upper; Pro/Max/Ultra
   Title-cased) in both `batch_all.py` and `build_price.py`.
+
+---
+
+## 2026-07-30 — FULL CATALOGUE LIVE (155/155 cards) + compat near-match fix
+
+**[✅ ALL 3 new-type tests SUCCESS incl. no-compat probe]** 638619 (soft-touch+compat), 638620
+(soft-touch NO-compat Pixel 7), 638623 (book) all reached SUCCESS. **Blank Совместимость does NOT
+fail the completeness gate** → soft-touch models absent from the catalogue are created with compat
+omitted (no «Универсальный» needed). The 23 C-remainders (638598-618) all SUCCESS too.
+
+**[✅ EXPANSION DONE]** `batch_all.py softtouch` → 64/64, `batch_all.py book` → 22/22 (1 transient
+502 retried → OK, e.g. tecno-camon40pro-siren 639420). **Every one of the 155 WB SKUs now has a
+Halyk card** (37 C7 + 21 C10 + 6 C6 + 4 C5 + 1 C2 + 22 book + 64 soft-touch = 155).
+
+**[compat resolver — safe near-match added]** `variants()` now relaxes ONLY same-body differences:
+strip network band `\b[45]g\b`, and prefix `xiaomi ` for Redmi/Poco (the catalogue writes
+"Xiaomi Redmi Note…"). Recovered 6 cards (Redmi Note 12/13 Pro 5G, Xiaomi Mi 11 Lite, Tecno Camon
+20 Pro 5G). Never relaxes model-defining tokens — S21 is NOT mapped to S21 FE. Blank-compat now
+soft-touch **43**/book **3**.
+
+**[⚠️ COMPAT CATALOGUE GAP — needs Qoldau request]** 46 cards across ~23 models are absent from
+Halyk's 231-model Совместимость enum (no API/draft way to add): Google Pixel 7/7Pro/8, OnePlus 11,
+Samsung S21/S21 Ultra/M31, Realme 11 Pro/14 Pro+/15 Pro/15T/9 Pro+/9 5G, Tecno Camon 40/40 Pro,
+Xiaomi 17/11T Pro, Honor 10X Lite/400 Pro, Huawei Nova 8i. These are created with the model in the
+title + Модель attr but no structured phone-filter. Only fix = ask Halyk/Qoldau to add them to the
+catalogue, then re-tag (recreate, no edit API).
+
+**[price/stock — FULL 155-offer upload]** `build_price.py` builds all 155; upload status flow is
+**CREATED → PROCESSING → COMPLETED/UPLOADED_WITH_ERRORS** (poll must treat CREATED as non-terminal;
+only stop on COMPLETED/UPLOADED_WITH_ERRORS/FAILED). Latest: **success=94, notMapped=59, fail=2**.
+notMapped = the 86 freshly-created cards not yet indexed (map once moderation approves them → re-push
+periodically). **No API endpoint exposes per-offer errors** (tried /upload/{id}, /errors, /report,
+/offers → 404); the 2 fails are visible only in the cabinet price-list report.
+
+**[ops] Routine `trig_01EKdHiGvHuyk5SE2wyQ3vV1`** repurposed to a periodic price re-sync: rebuild +
+re-push `price_all.xml` so newly-approved cards flip to В продаже; self-deletes once notMapped→~0.

@@ -14,17 +14,29 @@ cards={c["vendorCode"]:c for c in json.load(open(SP+"/wb_cards.json"))}
 prices={g["nmID"]:g for g in requests.get("https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1000",headers={"Authorization":wtok()},timeout=40).json()["data"]["listGoods"]}
 stock=json.load(open(SP+"/stock.json"))
 def norm(s): return re.sub(r'\s+',' ',s.strip().lower()).replace('ё','е')
+CANON_ID={norm(k):v for k,v in compat_opts.items()}
+CANON_NM={norm(k):k for k in compat_opts}
+def variants(s):
+    n=norm(s); outs=[n]
+    n2=re.sub(r'\s*\b[45]g\b','',n).strip()
+    if n2!=n: outs.append(n2)
+    for base in list(outs):
+        if base.startswith("redmi") or base.startswith("poco"): outs.append("xiaomi "+base)
+    return outs
 def compat_name(sku,c):
     wb=next((ch["value"] for ch in c["characteristics"] if ch["name"]=="Совместимость"),[])
     for v in wb:
-        if norm(v) in compat_lc: return [k for k in compat_opts if k.lower()==norm(v)][0]
+        if norm(v) in CANON_ID: return CANON_NM[norm(v)]
+    for v in wb:
+        for cand in variants(v):
+            if cand in CANON_ID: return CANON_NM[cand]
     seg=sku.split("-")
     if seg[0] in ("c7","c10","c5","c6","c2"): seg=seg[1:]
     if seg and seg[0]=="iphone":
         m=re.match(r'(\d+)(pro)?(max)?',seg[1] if len(seg)>1 else "")
         if m:
-            cand="apple iphone "+m.group(1)+(" pro" if m.group(2) else "")+(" max" if m.group(3) else "")
-            if cand in compat_lc: return cand
+            cand=norm("apple iphone "+m.group(1)+(" pro" if m.group(2) else "")+(" max" if m.group(3) else ""))
+            if cand in CANON_ID: return CANON_NM[cand]
     return None
 COLOR_ALIAS={"фуксия":"Малиновый","ярко-розовый":"Малиновый","розовый неон":"Малиновый","апельсин":"Оранжевый","графит":"Темно-серый"}
 def color_of(c):
