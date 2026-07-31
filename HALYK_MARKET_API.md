@@ -632,6 +632,22 @@ earlier "fail=2" in the offer upload is negligible/rounding, not a findable cabi
 
 ---
 
+## 2026-07-30 — live-data rule, real order, photo aspect
+
+**[RULE] ALWAYS re-check orders & live stock against Halyk live — never trust a cached note.**
+(A stale "0 orders" note was wrong.) Query `GET /gw/merchant/public/order/v2` (no params → 400 on
+some param combos; bare call works) every time orders/stock come up.
+
+**[live] 1 real order** `0013597323-1`, status `DELIVERY_PVZ` (СДЕК → Almaty PVZ), 5281 ₸, SKU
+**`c7-samsung-s23ultra-parent-col7`** (standalone card). **Exclude this SKU from any delete/recreate.**
+
+**[photos] Square was over-cautious — Halyk displays cases portrait 3:4.** Cabinet photo frames are
+3:4; WB images are native 900×1200 (3:4) with `photos[0]` = colourful marketing cover (frame+text).
+`batch_all.py` photo step changed to upload **native WB images in WB order, no square/white padding**
+(WB cover → Halyk «Обложка карточки»). Applies to future/recreated cards. **No photo-edit API** → to
+fix existing cards = delete (cabinet-only) + recreate + re-price + re-merge. Plan: **pilot 1 standalone
+card** (`b3-samsung-s24ultra-parent-red`) → recreate → verify → then the other 153 no-order cards.
+
 ## 2026-07-30 — ✅ COLOUR GROUPING SOLVED via cabinet «Соединение вариаций товаров»
 
 **Supersedes the earlier "grouping not API-controllable / account-manager only" verdict.** The

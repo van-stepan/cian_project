@@ -149,17 +149,17 @@ def submit(sku):
     price=int(g["sizes"][0]["price"]); sale=int(round(g["sizes"][0]["discountedPrice"])); ws=stock.get(sku,[0]*13)[12]
     # photos: white-bg squared, fallback to any if <3 white
     outdir=SP+"/allbatch/"+sku; os.makedirs(outdir,exist_ok=True); [os.remove(f) for f in glob.glob(outdir+"/*.jpg")]
-    whites=[]; allp=[]
+    # Use native WB images in WB order: photos[0] = WB marketing cover (frame + text) -> Halyk cover.
+    # Keep native 3:4 aspect (Halyk displays cases portrait 3:4); no square/white padding.
+    imgs=[]
     for p in c["photos"]:
         try: im=Image.open(io.BytesIO(requests.get(p["big"],timeout=30).content)).convert("RGB")
         except: continue
-        allp.append(im)
-        if is_white(im): whites.append(im)
-    use = whites if len(whites)>=3 else allp
-    if len(use)<3: return "SKIP %dphotos"%len(use)
+        imgs.append(im)
+    if len(imgs)<3: return "SKIP %dphotos"%len(imgs)
     k=0
-    for im in use[:8]:
-        k+=1; square(im).save(outdir+"/%02d.jpg"%k,"JPEG",quality=90)
+    for im in imgs[:8]:
+        k+=1; im.save(outdir+"/%02d.jpg"%k,"JPEG",quality=90)
     files=[("files",(os.path.basename(fn),open(fn,"rb").read(),"image/jpeg")) for fn in sorted(glob.glob(outdir+"/*.jpg"))]
     up=requests.post("https://halykmarket.kz/gw/merchant/public/file/image/upload/multiple",headers=H(False),files=files,timeout=120)
     try: media=[{"id":m["id"],"link":m["assetUrl"]} for m in up.json()]
