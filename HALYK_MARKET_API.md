@@ -690,3 +690,36 @@ SKU. NOTE: the 2 live CARD names (set at moderation) are still the old identical
 storefront card titles distinct too, delete those 2 in the cabinet and recreate via
 `batch_all.py <sku>` (no edit API). General rule: **product names must be unique across the whole
 price-list file** — differentiate any same-phone/same-colour cards that share a case type.
+
+---
+
+## 2026-08-03 — real photo source found: Yandex.Disk `BRICASE KZ/ФОТО`
+
+**[live] The "photo refresh" photo source is a Yandex.Disk folder, not (only) WB.** User provided a
+Yandex OAuth token (`YANDEX_DISK_TOKEN` in `.env`, `cloud-api.yandex.net` — reachable without extra
+network allowlisting, unlike halykmarket.kz/wildberries which need Custom network access). Under
+`disk:/BRICASE KZ/` there are business folders `WAREHOUSE` (stock sync source, see
+`HM_SYNC_HANDOUT.md` §6), `ФОТО` (photos), `ЦВЕТА ТОВАРОВ`, `ШАБЛОНЫ для СОЗДАНИЯ ТОВАРОВ`, etc.
+
+**`ФОТО` structure:** one subfolder per SKU, named with the **same vendorCode convention** as the
+catalogue (`<caseType>-<phonemodel>-parent-<colorToken>`, e.g. `b3-samsung-s24ultra-parent-red` — the
+pilot SKU from the 2026-07-30 native-photo plan). Inside, PNG files named `<sku>-r<N>v<M>.png`
+("render N, variant M") — **native ~3:4 aspect** (e.g. 1582×2110), custom-branded infographic-style
+product renders (title banner + feature-callout text baked into the image), distinct from and higher
+production value than the plain WB CDN photos. File count per folder is **not fixed** — sampled
+folders had anywhere from 1 to 16 images (multiple render/variant candidates for some SKUs, a single
+hero shot for others). **[open] no established rule yet for which file(s) to pick when a folder has
+multiple** — needs a decision (most recent r/v? all of them as a gallery? user curates?).
+
+**[live] Coverage vs the 155-SKU catalogue (checked 2026-08-03):** 120 folders present, of which 118
+match a real SKU exactly. **37 SKUs have no Yandex folder yet** — heavily concentrated in the iPhone
+17 / 17 Pro / 17 Pro Max C7/C10/C5/C6 families (32 of the 37), plus scattered others
+(`b2-redminote11-4g-parent-black`, `b3-tecno-povaneo2-parent-black-cs`,
+`realme-14proplus-parent-fuchsia-cs`, `xiaomi12pro-parent-black-cs`, `c7-samsung-s24-parent-col4`).
+**2 orphan folders don't match any current SKU** (likely stale/renamed): `b3-tecno-povaneo2-parent-black`
+(SKU has a `-cs` suffix the folder lacks) and `redminote10-parent-darkred-cs` (no matching SKU at all).
+
+**[open] Plan not yet decided:** whether the 37 uncovered SKUs fall back to the native-WB-photo recipe
+(2026-07-30 plan, already in `batch_all.py`) while the 118 covered ones use the Yandex renders, and
+how multi-file folders get reduced to a photo set. Needs user confirmation before building the
+downloader/recreate pipeline — this swaps live storefront images on ~118+ real product cards.
