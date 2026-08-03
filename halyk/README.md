@@ -22,5 +22,7 @@ A freshly-reclaimed container has no `.env`; recreate it before running.
   from the user's warehouse export; kept here as the durable copy.
 - `compat_opts.json` / `color_opts.json` — Halyk category-20004 enum maps (regenerable from the form).
 
-Scripts default their working dir to the session scratchpad; point them at this folder by
-copying `data/*` alongside the scripts (or set the `SP` path) when running from a fresh clone.
+Scripts are self-contained: they resolve `data/` (inputs) and `out/` (generated files —
+`allbatch*.json`, `price_all.xml`, `FINAL_STATUS.json`, `final_*.log`; gitignored) relative
+to their own location, so `python3 halyk/batch_all.py <mode>` works from a fresh clone as
+long as `../.env` has `HALYK_CLIENT_ID`, `HALYK_CLIENT_SECRET`, `WB_KZ_TOKEN`.

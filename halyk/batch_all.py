@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import requests, io, json, os, glob, time, re, sys
 from PIL import Image
-SP="/tmp/claude-0/-home-user-cian-project/86d433ab-8129-51c0-9d4f-b1a23c7ce53d/scratchpad"
+BASE=os.path.dirname(os.path.abspath(__file__))
+DATA=BASE+"/data"
+OUT=BASE+"/out"
+os.makedirs(OUT,exist_ok=True)
 def htok():
     cid=sec=None
     for line in open("/home/user/cian_project/.env",encoding="utf-8"):
@@ -23,13 +26,13 @@ def H(json_ct=True):
     if json_ct: h["Content-Type"]="application/json"
     return h
 
-compat_opts=json.load(open(SP+"/compat_opts.json"))          # name -> id
+compat_opts=json.load(open(DATA+"/compat_opts.json"))          # name -> id
 compat_lc={k.lower():v for k,v in compat_opts.items()}
-color_opts=json.load(open(SP+"/color_opts.json"))            # name -> id
+color_opts=json.load(open(DATA+"/color_opts.json"))            # name -> id
 color_lc={k.lower() for k in color_opts}
-cards={c["vendorCode"]:c for c in json.load(open(SP+"/wb_cards.json"))}
+cards={c["vendorCode"]:c for c in json.load(open(DATA+"/wb_cards.json"))}
 prices={g["nmID"]:g for g in requests.get("https://discounts-prices-api.wildberries.ru/api/v2/list/goods/filter?limit=1000",headers={"Authorization":wtok()},timeout=40).json()["data"]["listGoods"]}
-stock=json.load(open(SP+"/stock.json"))
+stock=json.load(open(DATA+"/stock.json"))
 
 # ---- resolvers ----
 def norm(s): return re.sub(r'\s+',' ',s.strip().lower()).replace('ё','е')
@@ -148,7 +151,7 @@ def submit(sku):
     if not g: return "SKIP noprice"
     price=int(g["sizes"][0]["price"]); sale=int(round(g["sizes"][0]["discountedPrice"])); ws=stock.get(sku,[0]*13)[12]
     # photos: white-bg squared, fallback to any if <3 white
-    outdir=SP+"/allbatch/"+sku; os.makedirs(outdir,exist_ok=True); [os.remove(f) for f in glob.glob(outdir+"/*.jpg")]
+    outdir=OUT+"/allbatch/"+sku; os.makedirs(outdir,exist_ok=True); [os.remove(f) for f in glob.glob(outdir+"/*.jpg")]
     # Use native WB images in WB order: photos[0] = WB marketing cover (frame + text) -> Halyk cover.
     # Keep native 3:4 aspect (Halyk displays cases portrait 3:4); no square/white padding.
     imgs=[]
@@ -208,6 +211,6 @@ for i,sku in enumerate(todo):
     try: r=submit(sku)
     except Exception as e: r="ERR %s"%str(e)[:90]
     res[sku]=r; print(" ",sku,"->",r)
-    json.dump(res,open(SP+"/allbatch_%s.json"%MODE,"w"),ensure_ascii=False,indent=1)
+    json.dump(res,open(OUT+"/allbatch_%s.json"%MODE,"w"),ensure_ascii=False,indent=1)
 ok=sum(1 for v in res.values() if v.startswith("OK")); al=sum(1 for v in res.values() if v=="ALREADY")
 print("DONE mode=%s: %d OK, %d ALREADY, %d other of %d"%(MODE,ok,al,len(todo)-ok-al,len(todo)))

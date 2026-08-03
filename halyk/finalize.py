@@ -2,7 +2,9 @@
 # Wait for the 3 new-type test cards to clear moderation, then batch soft-touch(64)+book(22)
 # accordingly, then rebuild+push the FULL price-list. Autonomous; writes FINAL_STATUS.json.
 import requests, json, time, os, subprocess
-SP="/tmp/claude-0/-home-user-cian-project/86d433ab-8129-51c0-9d4f-b1a23c7ce53d/scratchpad"
+BASE=os.path.dirname(os.path.abspath(__file__))
+OUT=BASE+"/out"
+os.makedirs(OUT,exist_ok=True)
 TESTS={"softtouch_compat":638619,"softtouch_nocompat":638620,"book":638623}
 def tok():
     cid=sec=None
@@ -21,7 +23,7 @@ def stat(T,i):
         d=requests.get("https://halykmarket.kz/gw/merchant/public/draft/product/%d"%i,headers={"Authorization":"Bearer "+T,"Content-Type":"application/json"},timeout=30).json()
         p=d.get("productDraftResponse",{}); return p.get("status"), (d.get("comment") or "")
     except: return None,""
-def wstat(o): json.dump(o,open(SP+"/FINAL_STATUS.json","w"),ensure_ascii=False,indent=1)
+def wstat(o): json.dump(o,open(OUT+"/FINAL_STATUS.json","w"),ensure_ascii=False,indent=1)
 
 st={"phase":"waiting-moderation","verdicts":{},"softtouch":None,"book":None,"price":None}
 verdicts={}
@@ -39,8 +41,8 @@ for cyc in range(80):                          # up to ~4h at 180s
 
 def run(mode,env=None):
     e=dict(os.environ); e.update(env or {})
-    r=subprocess.run(["python3",SP+"/batch_all.py",mode],capture_output=True,text=True,timeout=6000,env=e)
-    open(SP+"/final_%s.log"%mode,"w").write(r.stdout+"\n---ERR---\n"+r.stderr)
+    r=subprocess.run(["python3",BASE+"/batch_all.py",mode],capture_output=True,text=True,timeout=6000,env=e)
+    open(OUT+"/final_%s.log"%mode,"w").write(r.stdout+"\n---ERR---\n"+r.stderr)
     return r.stdout.strip().splitlines()[-1] if r.stdout.strip() else "no-out"
 
 st["phase"]="batching"; wstat(st)
@@ -61,8 +63,8 @@ wstat(st)
 
 # rebuild + push full price-list
 st["phase"]="pricing"; wstat(st)
-subprocess.run(["python3",SP+"/build_price.py"],capture_output=True,text=True,timeout=300)
-T=tok(); xml=open(SP+"/price_all.xml","rb").read()
+subprocess.run(["python3",BASE+"/build_price.py"],capture_output=True,text=True,timeout=300)
+T=tok(); xml=open(OUT+"/price_all.xml","rb").read()
 pr=None
 for _ in range(8):
     r=requests.post("https://api.halykmarket.com/api/merchant/v1/offers/upload",headers={"Authorization":"Bearer "+T},files={"file":("price_all.xml",xml,"application/xml")},timeout=90)
